@@ -28,6 +28,14 @@ git commit -m "<type>(scope): <short description>"
 git push origin main
 ```
 
+In this lab workspace, the `.git` directory is reserved by the environment and plain `git` may resolve to the parent lab repository. If that happens, use the project wrapper instead:
+
+```bash
+scripts/setup/git-shrimp add .
+scripts/setup/git-shrimp commit -m "<type>(scope): <short description>"
+scripts/setup/git-shrimp push origin main
+```
+
 Do not commit `.env`, secrets, raw data, heavy outputs, logs, caches, or machine-specific files.
 
 ## Product context

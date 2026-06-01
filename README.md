@@ -91,6 +91,14 @@ git commit -m "<type>(scope): <short description>"
 git push origin main
 ```
 
+Trong workspace lab hiện tại, `.git` bị môi trường khóa read-only nên lệnh `git` thường nhận repo cha. Dùng wrapper repo riêng này nếu gặp tình huống đó:
+
+```bash
+scripts/setup/git-shrimp add .
+scripts/setup/git-shrimp commit -m "<type>(scope): <short description>"
+scripts/setup/git-shrimp push origin main
+```
+
 Remote GitHub của dự án:
 
 ```text
