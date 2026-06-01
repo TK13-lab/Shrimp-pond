@@ -7,6 +7,7 @@ Date: 2026-06-01
 - Documentation package extracted from `shrimp_pond_app_server_codex_md.zip`.
 - No NestJS or Expo application code has been scaffolded yet.
 - Folder layout is prepared for a client-server monorepo.
+- Root checklist file created at `TODO_CHECKLIST.md`.
 
 ## Understood Scope
 
@@ -34,8 +35,8 @@ Out of scope for Phase 1:
 Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
 1. Scaffold `apps/api` as a NestJS TypeScript backend.
-2. Scaffold `apps/mobile` as a React Native Expo TypeScript app.
-3. Add local PostgreSQL via `docker-compose.yml`.
+2. Add local PostgreSQL via `docker-compose.yml`.
+3. Scaffold `apps/mobile` as a React Native Expo TypeScript app.
 4. Add `.env.example` files only, with no real secrets.
 
 ## Notes
