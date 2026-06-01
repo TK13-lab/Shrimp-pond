@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+
+# Local Git metadata used in this lab workspace when .git is read-only.
+.git-shrimp/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build outputs
+dist/
+build/
+coverage/
+.expo/
+.expo-shared/
+web-build/
+android/
+ios/
+
+# Local runtime data
+logs/*
+!logs/README.md
+outputs/*
+!outputs/README.md
+!outputs/checkpoints/
+outputs/checkpoints/*
+!outputs/checkpoints/README.md
+cache/*
+!cache/README.md
+data_links/*
+!data_links/README.md
+
+# Keep local workspace archives out of the repo
+*.zip
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

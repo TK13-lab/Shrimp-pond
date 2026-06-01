@@ -1,0 +1,331 @@
+# 06 - Database schema with Prisma
+
+This file describes the intended PostgreSQL schema.
+
+Use Prisma ORM.
+
+## Main entities
+
+```text
+User
+Farm
+Pond
+Material
+PurchaseReceipt
+PurchaseReceiptItem
+InventoryBalance
+InventoryTransaction
+IdempotencyKey
+AuditLog
+RefreshToken
+Device
+```
+
+## Prisma schema draft
+
+Codex should create `apps/api/prisma/schema.prisma` based on this draft.
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum ReceiptStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  VOIDED
+}
+
+enum InventoryTransactionType {
+  STOCK_IN
+  STOCK_IN_VOID
+  ADJUSTMENT
+}
+
+enum ReferenceType {
+  PURCHASE_RECEIPT
+  MANUAL_ADJUSTMENT
+}
+
+model Farm {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                  User[]
+  ponds                  Pond[]
+  materials              Material[]
+  purchaseReceipts       PurchaseReceipt[]
+  inventoryBalances      InventoryBalance[]
+  inventoryTransactions  InventoryTransaction[]
+  auditLogs              AuditLog[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  farmId       String?
+  fullName     String
+  username     String   @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farm              Farm? @relation(fields: [farmId], references: [id])
+  createdReceipts   PurchaseReceipt[] @relation("ReceiptCreatedBy")
+  submittedReceipts PurchaseReceipt[] @relation("ReceiptSubmittedBy")
+  approvedReceipts  PurchaseReceipt[] @relation("ReceiptApprovedBy")
+  refreshTokens     RefreshToken[]
+  idempotencyKeys   IdempotencyKey[]
+  auditLogs         AuditLog[]
+  devices           Device[]
+}
+
+model RefreshToken {
+  id           String   @id @default(uuid())
+  userId       String
+  tokenHash    String
+  revokedAt    DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Device {
+  id           String   @id @default(uuid())
+  userId       String?
+  deviceId     String
+  deviceName   String?
+  platform     String?
+  appVersion   String?
+  lastSeenAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@unique([deviceId])
+  @@index([userId])
+}
+
+model Pond {
+  id        String   @id @default(uuid())
+  farmId    String
+  name      String
+  area      Decimal? @db.Decimal(12, 2)
+  note      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id])
+
+  @@unique([farmId, name])
+  @@index([farmId])
+}
+
+model Material {
+  id          String   @id @default(uuid())
+  farmId      String
+  name        String
+  defaultUnit String
+  note        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  farm                    Farm @relation(fields: [farmId], references: [id])
+  receiptItems            PurchaseReceiptItem[]
+  inventoryBalances       InventoryBalance[]
+  inventoryTransactions   InventoryTransaction[]
+
+  @@unique([farmId, name, defaultUnit])
+  @@index([farmId])
+}
+
+model PurchaseReceipt {
+  id              String        @id @default(uuid())
+  farmId          String
+  receiptCode     String
+  receiptDate     DateTime
+  supplierName    String?
+  status          ReceiptStatus @default(DRAFT)
+  note            String?
+  totalAmount     Decimal       @default(0) @db.Decimal(14, 2)
+
+  createdById     String
+  submittedById   String?
+  approvedById    String?
+
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  voidedAt        DateTime?
+
+  rejectReason    String?
+  voidReason      String?
+
+  clientRequestId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  farm        Farm @relation(fields: [farmId], references: [id])
+  createdBy   User @relation("ReceiptCreatedBy", fields: [createdById], references: [id])
+  submittedBy User? @relation("ReceiptSubmittedBy", fields: [submittedById], references: [id])
+  approvedBy  User? @relation("ReceiptApprovedBy", fields: [approvedById], references: [id])
+
+  items PurchaseReceiptItem[]
+
+  @@unique([farmId, receiptCode])
+  @@index([farmId, status])
+  @@index([createdById])
+}
+
+model PurchaseReceiptItem {
+  id           String  @id @default(uuid())
+  receiptId    String
+  materialId   String?
+  materialName String
+  quantity     Decimal @db.Decimal(14, 3)
+  unit         String
+  unitPrice    Decimal @db.Decimal(14, 2)
+  lineTotal    Decimal @db.Decimal(14, 2)
+  createdAt    DateTime @default(now())
+
+  receipt PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  material Material? @relation(fields: [materialId], references: [id])
+
+  @@index([receiptId])
+  @@index([materialId])
+}
+
+model InventoryBalance {
+  id              String   @id @default(uuid())
+  farmId          String
+  materialId      String
+  materialName    String
+  unit            String
+  currentQuantity Decimal  @default(0) @db.Decimal(14, 3)
+  averagePrice    Decimal  @default(0) @db.Decimal(14, 2)
+  updatedAt       DateTime @updatedAt
+
+  farm     Farm @relation(fields: [farmId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+
+  @@unique([farmId, materialId, unit])
+  @@index([farmId])
+}
+
+model InventoryTransaction {
+  id              String   @id @default(uuid())
+  farmId          String
+  materialId      String
+  transactionType InventoryTransactionType
+  quantityChange  Decimal  @db.Decimal(14, 3)
+  unit            String
+  unitPrice       Decimal  @db.Decimal(14, 2)
+  totalAmount     Decimal  @db.Decimal(14, 2)
+  referenceType   ReferenceType
+  referenceId     String
+  createdById     String
+  createdAt       DateTime @default(now())
+
+  farm     Farm @relation(fields: [farmId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@unique([referenceType, referenceId, materialId])
+  @@index([farmId, materialId])
+  @@index([referenceType, referenceId])
+}
+
+model IdempotencyKey {
+  id               String   @id @default(uuid())
+  userId           String
+  clientRequestId  String
+  requestHash      String?
+  responseEntityId String?
+  responseBody     Json?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, clientRequestId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  farmId       String?
+  userId       String?
+  action       String
+  entityType   String
+  entityId     String?
+  oldValueJson Json?
+  newValueJson Json?
+  ipAddress    String?
+  deviceId     String?
+  createdAt    DateTime @default(now())
+
+  farm Farm? @relation(fields: [farmId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([farmId])
+  @@index([userId])
+  @@index([entityType, entityId])
+}
+```
+
+## Money and quantity
+
+Use decimal, not floating point, for money and quantities on backend.
+
+Recommended precision:
+
+```text
+quantity: Decimal(14, 3)
+money: Decimal(14, 2)
+```
+
+## Receipt code generation
+
+Backend generates receipt code.
+
+Example:
+
+```text
+PN-20260601-0001
+```
+
+Do not let mobile decide official receipt code.
+
+## Soft delete
+
+Use:
+
+```text
+isActive = false
+status = VOIDED
+```
+
+Do not hard-delete business records.

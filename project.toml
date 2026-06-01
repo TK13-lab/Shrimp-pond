@@ -1,0 +1,32 @@
+[project]
+name = "shrimp-pond-app"
+description = "Client-server MVP for shrimp pond material purchase receipts"
+phase = "phase-1"
+created = "2026-06-01"
+
+[workspace]
+docs = "docs"
+backend = "apps/api"
+mobile = "apps/mobile"
+config = "config"
+scripts = "scripts"
+outputs = "outputs"
+cache = "cache"
+
+[architecture]
+source_of_truth = "Backend REST API and PostgreSQL"
+backend = "NestJS + Prisma + PostgreSQL"
+mobile = "React Native Expo"
+database = "PostgreSQL"
+
+[phase_1]
+scope = [
+  "authentication",
+  "role-based-access-control",
+  "materials",
+  "purchase-receipts",
+  "inventory-approval-transaction",
+  "duplicate-prevention",
+  "audit-logs",
+  "android-internal-build-readiness",
+]
