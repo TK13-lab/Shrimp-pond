@@ -8,7 +8,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 
 - [x] S0-T1 Create project structure
 - [x] S0-T2 Create backend NestJS app
-- [ ] S0-T3 Create PostgreSQL Docker Compose
+- [x] S0-T3 Create PostgreSQL Docker Compose
 - [ ] S0-T4 Create mobile Expo app
 
 ## Sprint 1 - Auth and roles
