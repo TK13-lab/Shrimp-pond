@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+
+DOCKER_EXE="/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe"
+
+exec "$DOCKER_EXE" "$@"

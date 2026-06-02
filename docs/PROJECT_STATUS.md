@@ -11,6 +11,10 @@ Date: 2026-06-01
 - Backend base includes `ConfigModule`, global validation pipe, global `/api` prefix, Prisma placeholder, and `GET /api/health`.
 - Backend build, typecheck, and smoke bootstrap pass in the lab workspace.
 - Root `docker-compose.yml` is added for local PostgreSQL development.
+- Local PostgreSQL is running through Docker Desktop on the Windows host and is healthy on port `5432`.
+- `apps/mobile` is scaffolded as an Expo TypeScript app with React Navigation.
+- Mobile placeholder screens exist for login and menu flow.
+- Mobile typecheck passes, Expo config resolves, and Metro starts successfully outside the sandbox.
 
 ## Understood Scope
 
@@ -37,10 +41,10 @@ Out of scope for Phase 1:
 
 Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Scaffold `apps/mobile` as a React Native Expo TypeScript app.
-2. Add remaining `.env.example` files only, with no real secrets.
-3. Start Sprint 1 Prisma schema work after database setup.
-4. Run local end-to-end checks once Docker is available on the machine.
+1. Start Sprint 1 Prisma schema work in `apps/api/prisma/schema.prisma`.
+2. Add initial Prisma migration flow and client generation.
+3. Seed the demo farm and users.
+4. Connect the mobile placeholder screens to real auth endpoints after Sprint 1 backend auth is ready.
 
 ## Notes
 
@@ -50,4 +54,5 @@ Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - After every completed and verified step, commit locally and push to `git@github.com:TK13-lab/Shrimp-pond.git`.
 - Never commit `.env`, secrets, raw data, heavy outputs, logs, caches, or machine-specific files.
 - The sandbox blocks opening a listening port, so runtime verification in the lab uses `npm run smoke:bootstrap` in addition to build and typecheck.
-- Docker is not installed in the current lab sandbox, so `docker compose up` has not been executed here yet.
+- Docker engine is reached through Docker Desktop on the Windows host by using `scripts/setup/docker-host`.
+- Expo showed a non-blocking React Native DevTools shared-library warning for `libasound.so.2`, but the Metro server still started successfully.
