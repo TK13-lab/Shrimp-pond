@@ -5,9 +5,11 @@ Date: 2026-06-01
 ## Current State
 
 - Documentation package extracted from `shrimp_pond_app_server_codex_md.zip`.
-- No NestJS or Expo application code has been scaffolded yet.
 - Folder layout is prepared for a client-server monorepo.
 - Root checklist file created at `TODO_CHECKLIST.md`.
+- `apps/api` is scaffolded as a NestJS TypeScript backend.
+- Backend base includes `ConfigModule`, global validation pipe, global `/api` prefix, Prisma placeholder, and `GET /api/health`.
+- Backend build, typecheck, and smoke bootstrap pass in the lab workspace.
 
 ## Understood Scope
 
@@ -34,10 +36,10 @@ Out of scope for Phase 1:
 
 Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Scaffold `apps/api` as a NestJS TypeScript backend.
-2. Add local PostgreSQL via `docker-compose.yml`.
-3. Scaffold `apps/mobile` as a React Native Expo TypeScript app.
-4. Add `.env.example` files only, with no real secrets.
+1. Add local PostgreSQL via `docker-compose.yml`.
+2. Scaffold `apps/mobile` as a React Native Expo TypeScript app.
+3. Add `.env.example` files only, with no real secrets.
+4. Start Sprint 1 Prisma schema work after database setup.
 
 ## Notes
 
@@ -46,3 +48,4 @@ Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - Mobile must never contain database credentials, JWT secrets, or private service keys.
 - After every completed and verified step, commit locally and push to `git@github.com:TK13-lab/Shrimp-pond.git`.
 - Never commit `.env`, secrets, raw data, heavy outputs, logs, caches, or machine-specific files.
+- The sandbox blocks opening a listening port, so runtime verification in the lab uses `npm run smoke:bootstrap` in addition to build and typecheck.

@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Sprint 0 only scaffolds Prisma integration.
+// Business models will be added in Sprint 1+ from docs/06_DATABASE_SCHEMA_PRISMA.md.
