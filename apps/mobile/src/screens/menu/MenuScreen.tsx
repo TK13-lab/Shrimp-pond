@@ -61,6 +61,11 @@ export function MenuScreen({ navigation }: Props) {
   );
 
   function handleMenuPress(key: string) {
+    if (key === 'create-receipt' || key === 'receipts') {
+      navigation.navigate('PurchaseReceiptForm');
+      return;
+    }
+
     if (key === 'materials') {
       navigation.navigate('MaterialList');
       return;

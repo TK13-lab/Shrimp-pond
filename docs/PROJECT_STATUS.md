@@ -41,6 +41,9 @@ Date: 2026-06-01
 - Backend receipt browsing is implemented with `GET /api/purchase-receipts` and `GET /api/purchase-receipts/:id`.
 - Receipt list API supports `status`, `from`, and `to` filters, returns creator/submission actor summaries, and enforces visibility as `STAFF = own receipts`, `MANAGER = farm receipts`, and `ADMIN = all receipts`.
 - Receipt detail API returns header, actors, items, totals, and note fields needed for the upcoming mobile receipt screens, and denies cross-user access for staff with `403`.
+- Mobile receipt form is implemented in `PurchaseReceiptFormScreen`.
+- The form supports manual item rows, quick-add rows from active materials, local total calculation, draft save, and submit actions wired to the backend create and submit APIs.
+- Mobile submit disables action buttons while requests are pending, generates `client_request_id` locally, and warns when the user changes a saved draft because backend draft editing has not landed yet.
 
 ## Understood Scope
 
@@ -67,9 +70,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 3 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Build the mobile receipt form with item rows and local validation.
-2. Connect draft-save and submit actions to the existing create and submit APIs.
-3. Build mobile receipt list/detail screens on top of the new browsing endpoints.
+1. Build mobile receipt list/detail screens on top of the new browsing endpoints.
+2. Show draft and submitted receipts differently for staff versus manager/admin flows.
+3. Reuse receipt actor and status data from the new backend list/detail responses.
 4. Keep inventory changes backend-only and approval-driven until approval APIs land in Sprint 4.
 
 ## Notes

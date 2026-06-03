@@ -6,6 +6,7 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { MaterialFormScreen } from '../screens/materials/MaterialFormScreen';
 import { MaterialListScreen } from '../screens/materials/MaterialListScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
+import { PurchaseReceiptFormScreen } from '../screens/purchaseReceipts/PurchaseReceiptFormScreen';
 import { Material } from '../types/materials';
 
 export type RootStackParamList = {
@@ -17,6 +18,7 @@ export type RootStackParamList = {
     | {
         material: Material;
       };
+  PurchaseReceiptForm: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -55,6 +57,11 @@ export function AppNavigator() {
             name="MaterialForm"
             component={MaterialFormScreen}
             options={{ title: 'Vật tư' }}
+          />
+          <Stack.Screen
+            name="PurchaseReceiptForm"
+            component={PurchaseReceiptFormScreen}
+            options={{ title: 'Tạo phiếu nhập' }}
           />
         </>
       ) : (
