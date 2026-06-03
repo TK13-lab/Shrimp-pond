@@ -14,7 +14,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 ## Sprint 1 - Auth and roles
 
 - [x] S1-T1 Prisma schema base
-- [ ] S1-T2 Seed demo data
+- [x] S1-T2 Seed demo data
 - [ ] S1-T3 Auth module
 - [ ] S1-T4 Guards
 - [ ] S1-T5 Mobile auth

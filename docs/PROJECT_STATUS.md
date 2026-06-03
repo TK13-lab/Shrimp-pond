@@ -17,6 +17,8 @@ Date: 2026-06-01
 - Mobile typecheck passes, Expo config resolves, and Metro starts successfully outside the sandbox.
 - Prisma base schema for `Farm`, `User`, `RefreshToken`, `Device`, `AuditLog`, and `Role` is implemented in `apps/api/prisma/schema.prisma`.
 - Prisma migration `20260603022023_init_auth_base` has been created and applied to local PostgreSQL.
+- Prisma seed script is implemented in `apps/api/prisma/seed.ts`.
+- Local PostgreSQL now contains 1 demo farm and 6 demo users for development and manual testing.
 
 ## Understood Scope
 
@@ -43,10 +45,10 @@ Out of scope for Phase 1:
 
 Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Start Sprint 1 Prisma schema work in `apps/api/prisma/schema.prisma`.
-2. Seed the demo farm and users.
-3. Build the auth module and login endpoints.
-4. Connect the mobile placeholder screens to real auth endpoints after Sprint 1 backend auth is ready.
+1. Build the auth module and login endpoints.
+2. Add JWT guards and role guards.
+3. Connect the mobile placeholder screens to real auth endpoints.
+4. Keep the seeded demo accounts for manual auth testing.
 
 ## Notes
 
@@ -59,3 +61,4 @@ Start with Sprint 0 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - Docker engine is reached through Docker Desktop on the Windows host by using `scripts/setup/docker-host`.
 - Expo showed a non-blocking React Native DevTools shared-library warning for `libasound.so.2`, but the Metro server still started successfully.
 - Prisma migration to local PostgreSQL required running outside the sandbox because sandbox networking could not reach `127.0.0.1:5432`.
+- Prisma `db seed` works, but Prisma 6 prints a deprecation warning for `package.json#prisma`; this is non-blocking for now and can be moved later to `prisma.config.ts`.
