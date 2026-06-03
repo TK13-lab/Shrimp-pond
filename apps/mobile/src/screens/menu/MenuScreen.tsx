@@ -1,4 +1,6 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -8,8 +10,11 @@ import {
 
 import { MENU_BY_ROLE, ROLE_LABELS } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
+import type { RootStackParamList } from '../../navigation/AppNavigator';
 
-export function MenuScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'Menu'>;
+
+export function MenuScreen({ navigation }: Props) {
   const { isSigningOut, signOut, user } = useAuth();
 
   if (!user) {
@@ -32,10 +37,13 @@ export function MenuScreen() {
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <View style={styles.item}>
+          <Pressable
+            onPress={() => handleMenuPress(item.key)}
+            style={styles.item}
+          >
             <Text style={styles.itemTitle}>{item.title}</Text>
             <Text style={styles.itemDescription}>{item.description}</Text>
-          </View>
+          </Pressable>
         )}
         ListFooterComponent={
           <Pressable
@@ -51,6 +59,18 @@ export function MenuScreen() {
       />
     </View>
   );
+
+  function handleMenuPress(key: string) {
+    if (key === 'materials') {
+      navigation.navigate('MaterialList');
+      return;
+    }
+
+    Alert.alert(
+      'Đang phát triển',
+      'Màn hình này sẽ được triển khai ở sprint tiếp theo.'
+    );
+  }
 }
 
 const styles = StyleSheet.create({

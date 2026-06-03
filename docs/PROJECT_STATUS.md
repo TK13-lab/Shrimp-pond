@@ -29,6 +29,8 @@ Date: 2026-06-01
 - Prisma migration `20260603080724_add_material_model` has been created and applied to local PostgreSQL, and the `Material` table is present with the expected unique constraint on `(farmId, name, defaultUnit)`.
 - Backend materials module is implemented with `GET /api/materials`, `POST /api/materials`, `PATCH /api/materials/:id`, and `PATCH /api/materials/:id/disable`.
 - Materials API is protected by JWT and role guards, enforces staff read-only access, checks duplicates, filters active materials for staff, and writes audit logs for create/update/disable actions.
+- Mobile materials flow is implemented with `MaterialListScreen`, `MaterialFormScreen`, and `materialApi.ts`.
+- Admin users can add, edit, and disable materials from the mobile app, while manager and staff stay read-only and can only browse the catalog.
 
 ## Understood Scope
 
@@ -53,12 +55,12 @@ Out of scope for Phase 1:
 
 ## Next Recommended Task
 
-Continue with Sprint 2 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
+Continue with Sprint 3 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Connect the mobile app to `GET /materials`.
-2. Add admin-only create and update flows for materials.
-3. Add role-aware create/edit buttons on the materials screen.
-4. Keep using backend duplicate validation and permission errors in the mobile UX.
+1. Add purchase receipt schema models and migrations.
+2. Implement `POST /api/purchase-receipts` with idempotency support.
+3. Build the mobile receipt form with item rows and local validation.
+4. Keep inventory changes backend-only and approval-driven.
 
 ## Notes
 

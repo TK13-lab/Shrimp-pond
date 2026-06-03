@@ -23,7 +23,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 
 - [x] S2-T1 Material schema and migration
 - [x] S2-T2 Material API
-- [ ] S2-T3 Mobile material screens
+- [x] S2-T3 Mobile material screens
 
 ## Notes
 

@@ -3,11 +3,20 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../auth/useAuth';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { MaterialFormScreen } from '../screens/materials/MaterialFormScreen';
+import { MaterialListScreen } from '../screens/materials/MaterialListScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
+import { Material } from '../types/materials';
 
 export type RootStackParamList = {
   Login: undefined;
   Menu: undefined;
+  MaterialList: undefined;
+  MaterialForm:
+    | undefined
+    | {
+        material: Material;
+      };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -31,11 +40,23 @@ export function AppNavigator() {
       }}
     >
       {session ? (
-        <Stack.Screen
-          name="Menu"
-          component={MenuScreen}
-          options={{ title: 'Trang chính', headerBackVisible: false }}
-        />
+        <>
+          <Stack.Screen
+            name="Menu"
+            component={MenuScreen}
+            options={{ title: 'Trang chính', headerBackVisible: false }}
+          />
+          <Stack.Screen
+            name="MaterialList"
+            component={MaterialListScreen}
+            options={{ title: 'Danh mục vật tư' }}
+          />
+          <Stack.Screen
+            name="MaterialForm"
+            component={MaterialFormScreen}
+            options={{ title: 'Vật tư' }}
+          />
+        </>
       ) : (
         <Stack.Screen
           name="Login"
