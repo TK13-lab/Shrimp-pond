@@ -29,6 +29,7 @@ enum InventoryTransactionType {
 
 enum ReferenceType {
   PURCHASE_RECEIPT
+  PURCHASE_RECEIPT_VOID
   MANUAL_ADJUSTMENT
 }
 

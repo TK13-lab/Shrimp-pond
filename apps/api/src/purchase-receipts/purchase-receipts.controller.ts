@@ -20,6 +20,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreatePurchaseReceiptDto } from './dto/create-purchase-receipt.dto';
 import { QueryPurchaseReceiptsDto } from './dto/query-purchase-receipts.dto';
 import { RejectPurchaseReceiptDto } from './dto/reject-purchase-receipt.dto';
+import { VoidPurchaseReceiptDto } from './dto/void-purchase-receipt.dto';
 import { PurchaseReceiptsService } from './purchase-receipts.service';
 
 @Controller('purchase-receipts')
@@ -99,6 +100,25 @@ export class PurchaseReceiptsController {
       user,
       receiptId,
       rejectPurchaseReceiptDto,
+      {
+        deviceId: this.getHeaderValue(request, 'x-device-id'),
+        ipAddress: this.getRequestIp(request)
+      }
+    );
+  }
+
+  @Patch(':id/void')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  voidReceipt(
+    @CurrentUser() user: AuthUserProfile,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) receiptId: string,
+    @Body() voidPurchaseReceiptDto: VoidPurchaseReceiptDto,
+    @Req() request: HttpRequest
+  ) {
+    return this.purchaseReceiptsService.voidReceipt(
+      user,
+      receiptId,
+      voidPurchaseReceiptDto,
       {
         deviceId: this.getHeaderValue(request, 'x-device-id'),
         ipAddress: this.getRequestIp(request)
