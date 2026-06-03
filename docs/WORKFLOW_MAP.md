@@ -82,6 +82,13 @@ This file maps the project documentation to the working folder layout.
 6. Commit the completed step locally.
 7. Push the commit to GitHub.
 
+## Current Workflow Snapshot
+
+- Materials flow is live in the backend and mobile app, with admin-only write actions and staff read-only access.
+- Purchase receipt flow currently supports backend draft creation and draft submission.
+- Receipt submission now uses `PATCH /api/purchase-receipts/:id/submit`, enforces `DRAFT -> SUBMITTED`, records audit logs, and does not update inventory yet.
+- Inventory updates remain deferred to the approval transaction planned for Sprint 4.
+
 ## Git Remote
 
 Use this remote for the project:

@@ -11,6 +11,7 @@ import {
   Prisma,
   PurchaseReceipt,
   PurchaseReceiptItem,
+  ReceiptStatus,
   Role
 } from '@prisma/client';
 import { createHash } from 'crypto';
@@ -213,6 +214,70 @@ export class PurchaseReceiptsService {
     }
 
     throw new InternalServerErrorException('Không thể tạo mã phiếu nhập');
+  }
+
+  async submit(
+    user: AuthUserProfile,
+    receiptId: string,
+    meta: RequestMeta
+  ): Promise<SerializedPurchaseReceipt> {
+    const receipt = await this.loadReceiptEntityById(receiptId);
+
+    this.assertCanSubmitReceipt(user, receipt);
+
+    if (receipt.status !== ReceiptStatus.DRAFT) {
+      throw new ConflictException('Chỉ có thể gửi duyệt phiếu ở trạng thái nháp');
+    }
+
+    this.assertReceiptItemsValid(receipt.items);
+
+    const submittedAt = new Date();
+
+    const updatedReceipt = await this.prisma.$transaction(async (tx) => {
+      const nextReceipt = await tx.purchaseReceipt.update({
+        where: {
+          id: receipt.id
+        },
+        data: {
+          status: ReceiptStatus.SUBMITTED,
+          submittedById: user.id,
+          submittedAt
+        },
+        include: {
+          items: true
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          farmId: nextReceipt.farmId,
+          userId: user.id,
+          action: 'SUBMIT_RECEIPT',
+          entityType: 'PURCHASE_RECEIPT',
+          entityId: nextReceipt.id,
+          oldValueJson: {
+            id: receipt.id,
+            receiptCode: receipt.receiptCode,
+            status: receipt.status,
+            submittedById: receipt.submittedById,
+            submittedAt: this.serializeDate(receipt.submittedAt)
+          },
+          newValueJson: {
+            id: nextReceipt.id,
+            receiptCode: nextReceipt.receiptCode,
+            status: nextReceipt.status,
+            submittedById: nextReceipt.submittedById,
+            submittedAt: this.serializeDate(nextReceipt.submittedAt)
+          },
+          deviceId: meta.deviceId ?? null,
+          ipAddress: meta.ipAddress ?? null
+        }
+      });
+
+      return nextReceipt;
+    });
+
+    return this.serializeReceipt(updatedReceipt);
   }
 
   private buildReceiptItemsData(
@@ -421,6 +486,12 @@ export class PurchaseReceiptsService {
   private async loadReceiptById(
     receiptId: string
   ): Promise<SerializedPurchaseReceipt> {
+    const receipt = await this.loadReceiptEntityById(receiptId);
+
+    return this.serializeReceipt(receipt);
+  }
+
+  private async loadReceiptEntityById(receiptId: string): Promise<ReceiptWithItems> {
     const receipt = await this.prisma.purchaseReceipt.findUnique({
       where: {
         id: receiptId
@@ -431,10 +502,10 @@ export class PurchaseReceiptsService {
     });
 
     if (!receipt) {
-      throw new NotFoundException('Không tìm thấy phiếu nhập đã tạo trước đó');
+      throw new NotFoundException('Không tìm thấy phiếu nhập');
     }
 
-    return this.serializeReceipt(receipt);
+    return receipt;
   }
 
   private async resolveWritableFarmId(user: AuthUserProfile): Promise<string> {
@@ -518,6 +589,55 @@ export class PurchaseReceiptsService {
     const day = String(date.getUTCDate()).padStart(2, '0');
 
     return `${year}${month}${day}`;
+  }
+
+  private assertCanSubmitReceipt(
+    user: AuthUserProfile,
+    receipt: ReceiptWithItems
+  ): void {
+    if (user.role === Role.ADMIN) {
+      return;
+    }
+
+    if (user.role === Role.MANAGER) {
+      if (user.farmId !== receipt.farmId) {
+        throw new ForbiddenException('Bạn không có quyền gửi duyệt phiếu này');
+      }
+
+      return;
+    }
+
+    if (receipt.createdById !== user.id) {
+      throw new ForbiddenException('Bạn chỉ có thể gửi duyệt phiếu của mình');
+    }
+
+    if (user.farmId !== receipt.farmId) {
+      throw new ForbiddenException('Bạn không có quyền gửi duyệt phiếu này');
+    }
+  }
+
+  private assertReceiptItemsValid(items: PurchaseReceiptItem[]): void {
+    if (items.length === 0) {
+      throw new BadRequestException('Phiếu nhập phải có ít nhất 1 dòng vật tư');
+    }
+
+    for (const item of items) {
+      if (!item.materialName.trim()) {
+        throw new BadRequestException('Tên vật tư không được để trống');
+      }
+
+      if (!item.unit.trim()) {
+        throw new BadRequestException('Đơn vị tính không được để trống');
+      }
+
+      if (item.quantity.lte(0)) {
+        throw new BadRequestException('Số lượng phải lớn hơn 0');
+      }
+
+      if (item.unitPrice.lt(0)) {
+        throw new BadRequestException('Đơn giá không được nhỏ hơn 0');
+      }
+    }
   }
 
   private isIdempotencyConflict(error: unknown): boolean {

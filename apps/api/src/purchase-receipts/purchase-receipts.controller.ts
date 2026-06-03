@@ -1,6 +1,9 @@
 import {
   Body,
   Controller,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Req,
   UseGuards
@@ -32,6 +35,19 @@ export class PurchaseReceiptsController {
     return this.purchaseReceiptsService.create(user, createPurchaseReceiptDto, {
       deviceId: this.getHeaderValue(request, 'x-device-id'),
       idempotencyKey: this.getHeaderValue(request, 'x-idempotency-key'),
+      ipAddress: this.getRequestIp(request)
+    });
+  }
+
+  @Patch(':id/submit')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.STAFF)
+  submit(
+    @CurrentUser() user: AuthUserProfile,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) receiptId: string,
+    @Req() request: HttpRequest
+  ) {
+    return this.purchaseReceiptsService.submit(user, receiptId, {
+      deviceId: this.getHeaderValue(request, 'x-device-id'),
       ipAddress: this.getRequestIp(request)
     });
   }
