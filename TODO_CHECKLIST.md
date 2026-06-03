@@ -30,7 +30,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S3-T1 Receipt schema
 - [x] S3-T2 Receipt create API
 - [x] S3-T3 Receipt submit API
-- [ ] S3-T4 Receipt list/detail API
+- [x] S3-T4 Receipt list/detail API
 - [ ] S3-T5 Mobile receipt form
 - [ ] S3-T6 Mobile receipt list/detail
 

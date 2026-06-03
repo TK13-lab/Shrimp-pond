@@ -38,6 +38,9 @@ Date: 2026-06-01
 - Backend receipt submission is implemented with `PATCH /api/purchase-receipts/:id/submit`.
 - Receipt submit API only allows `DRAFT -> SUBMITTED`, records `submittedById` and `submittedAt`, blocks duplicate resubmission with `409`, enforces ownership and role rules, and writes `SUBMIT_RECEIPT` audit logs without touching inventory.
 - Manual verification against local PostgreSQL confirmed three key paths: staff can submit their own draft, another staff member is blocked with `403`, and a manager in the same farm can submit a draft when needed.
+- Backend receipt browsing is implemented with `GET /api/purchase-receipts` and `GET /api/purchase-receipts/:id`.
+- Receipt list API supports `status`, `from`, and `to` filters, returns creator/submission actor summaries, and enforces visibility as `STAFF = own receipts`, `MANAGER = farm receipts`, and `ADMIN = all receipts`.
+- Receipt detail API returns header, actors, items, totals, and note fields needed for the upcoming mobile receipt screens, and denies cross-user access for staff with `403`.
 
 ## Understood Scope
 
@@ -64,9 +67,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 3 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Build receipt list and detail endpoints for farm-scoped browsing and per-user visibility.
-2. Add filters for own receipts versus all farm receipts where the role allows it.
-3. Return enough receipt and item detail for the upcoming mobile receipt screens.
+1. Build the mobile receipt form with item rows and local validation.
+2. Connect draft-save and submit actions to the existing create and submit APIs.
+3. Build mobile receipt list/detail screens on top of the new browsing endpoints.
 4. Keep inventory changes backend-only and approval-driven until approval APIs land in Sprint 4.
 
 ## Notes

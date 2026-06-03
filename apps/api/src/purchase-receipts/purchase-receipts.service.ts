@@ -9,10 +9,10 @@ import {
 import {
   Material,
   Prisma,
-  PurchaseReceipt,
   PurchaseReceiptItem,
   ReceiptStatus,
-  Role
+  Role,
+  User
 } from '@prisma/client';
 import { createHash } from 'crypto';
 
@@ -22,6 +22,44 @@ import {
   CreatePurchaseReceiptDto,
   CreatePurchaseReceiptItemDto
 } from './dto/create-purchase-receipt.dto';
+import { QueryPurchaseReceiptsDto } from './dto/query-purchase-receipts.dto';
+
+const receiptActorSelect = {
+  id: true,
+  fullName: true,
+  username: true,
+  role: true
+} satisfies Prisma.UserSelect;
+
+const receiptDetailInclude = {
+  items: true,
+  createdBy: {
+    select: receiptActorSelect
+  },
+  submittedBy: {
+    select: receiptActorSelect
+  },
+  approvedBy: {
+    select: receiptActorSelect
+  }
+} satisfies Prisma.PurchaseReceiptInclude;
+
+const receiptSummaryInclude = {
+  createdBy: {
+    select: receiptActorSelect
+  },
+  submittedBy: {
+    select: receiptActorSelect
+  },
+  approvedBy: {
+    select: receiptActorSelect
+  },
+  _count: {
+    select: {
+      items: true
+    }
+  }
+} satisfies Prisma.PurchaseReceiptInclude;
 
 type RequestMeta = {
   deviceId?: string | null;
@@ -30,6 +68,19 @@ type RequestMeta = {
 };
 
 type MaterialRecord = Pick<Material, 'defaultUnit' | 'farmId' | 'id' | 'name'>;
+type ReceiptActorRecord = Pick<User, 'fullName' | 'id' | 'role' | 'username'>;
+type ReceiptSummaryRecord = Prisma.PurchaseReceiptGetPayload<{
+  include: typeof receiptSummaryInclude;
+}>;
+type ReceiptWithRelations = Prisma.PurchaseReceiptGetPayload<{
+  include: typeof receiptDetailInclude;
+}>;
+type SerializedReceiptActor = {
+  fullName: string;
+  id: string;
+  role: Role;
+  username: string;
+};
 
 type SerializedPurchaseReceiptItem = {
   createdAt: string;
@@ -43,22 +94,23 @@ type SerializedPurchaseReceiptItem = {
   unitPrice: string;
 };
 
-type SerializedPurchaseReceipt = {
+type SerializedPurchaseReceiptSummary = {
   approvedAt: string | null;
+  approvedBy: SerializedReceiptActor | null;
   approvedById: string | null;
-  clientRequestId: string | null;
   createdAt: string;
+  createdBy: SerializedReceiptActor;
   createdById: string;
   farmId: string;
   id: string;
-  items: SerializedPurchaseReceiptItem[];
-  note: string | null;
+  itemCount: number;
   receiptCode: string;
   receiptDate: string;
   rejectReason: string | null;
   rejectedAt: string | null;
   status: string;
   submittedAt: string | null;
+  submittedBy: SerializedReceiptActor | null;
   submittedById: string | null;
   supplierName: string | null;
   totalAmount: string;
@@ -67,13 +119,62 @@ type SerializedPurchaseReceipt = {
   voidedAt: string | null;
 };
 
-type ReceiptWithItems = PurchaseReceipt & {
-  items: PurchaseReceiptItem[];
+type SerializedPurchaseReceipt = {
+  approvedAt: string | null;
+  approvedBy: SerializedReceiptActor | null;
+  approvedById: string | null;
+  clientRequestId: string | null;
+  createdAt: string;
+  createdBy: SerializedReceiptActor;
+  createdById: string;
+  farmId: string;
+  id: string;
+  itemCount: number;
+  items: SerializedPurchaseReceiptItem[];
+  note: string | null;
+  receiptCode: string;
+  receiptDate: string;
+  rejectReason: string | null;
+  rejectedAt: string | null;
+  status: string;
+  submittedAt: string | null;
+  submittedBy: SerializedReceiptActor | null;
+  submittedById: string | null;
+  supplierName: string | null;
+  totalAmount: string;
+  updatedAt: string;
+  voidReason: string | null;
+  voidedAt: string | null;
 };
 
 @Injectable()
 export class PurchaseReceiptsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findAll(user: AuthUserProfile, query: QueryPurchaseReceiptsDto) {
+    const where = this.buildReceiptListWhere(user, query);
+
+    const receipts = await this.prisma.purchaseReceipt.findMany({
+      where,
+      include: receiptSummaryInclude,
+      orderBy: [{ receiptDate: 'desc' }, { createdAt: 'desc' }]
+    });
+
+    return {
+      items: receipts.map((receipt) => this.serializeReceiptSummary(receipt))
+    };
+  }
+
+  async findOne(
+    user: AuthUserProfile,
+    receiptId: string
+  ): Promise<SerializedPurchaseReceipt> {
+    const receipt = await this.loadReceiptEntityById(receiptId);
+
+    this.assertCanViewReceipt(user, receipt);
+
+    return this.serializeReceipt(receipt);
+  }
 
   async create(
     user: AuthUserProfile,
@@ -148,9 +249,7 @@ export class PurchaseReceiptsService {
                 }))
               }
             },
-            include: {
-              items: true
-            }
+            include: receiptDetailInclude
           });
 
           const serialized = this.serializeReceipt(createdReceipt);
@@ -243,9 +342,7 @@ export class PurchaseReceiptsService {
           submittedById: user.id,
           submittedAt
         },
-        include: {
-          items: true
-        }
+        include: receiptDetailInclude
       });
 
       await tx.auditLog.create({
@@ -471,9 +568,7 @@ export class PurchaseReceiptsService {
           clientRequestId
         }
       },
-      include: {
-        items: true
-      }
+      include: receiptDetailInclude
     });
 
     if (!existingReceipt) {
@@ -491,14 +586,14 @@ export class PurchaseReceiptsService {
     return this.serializeReceipt(receipt);
   }
 
-  private async loadReceiptEntityById(receiptId: string): Promise<ReceiptWithItems> {
+  private async loadReceiptEntityById(
+    receiptId: string
+  ): Promise<ReceiptWithRelations> {
     const receipt = await this.prisma.purchaseReceipt.findUnique({
       where: {
         id: receiptId
       },
-      include: {
-        items: true
-      }
+      include: receiptDetailInclude
     });
 
     if (!receipt) {
@@ -543,7 +638,90 @@ export class PurchaseReceiptsService {
     );
   }
 
-  private serializeReceipt(receipt: ReceiptWithItems): SerializedPurchaseReceipt {
+  private requireScopedFarmId(user: AuthUserProfile): string {
+    if (!user.farmId) {
+      throw new ForbiddenException('Tài khoản chưa được gán trại');
+    }
+
+    return user.farmId;
+  }
+
+  private buildReceiptListWhere(
+    user: AuthUserProfile,
+    query: QueryPurchaseReceiptsDto
+  ): Prisma.PurchaseReceiptWhereInput {
+    const where = this.buildVisibleReceiptsWhere(user);
+    const receiptDate = this.buildReceiptDateWhere(query);
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (receiptDate) {
+      where.receiptDate = receiptDate;
+    }
+
+    return where;
+  }
+
+  private buildVisibleReceiptsWhere(
+    user: AuthUserProfile
+  ): Prisma.PurchaseReceiptWhereInput {
+    if (user.role === Role.ADMIN) {
+      return user.farmId
+        ? {
+            farmId: user.farmId
+          }
+        : {};
+    }
+
+    if (user.role === Role.MANAGER) {
+      return {
+        farmId: this.requireScopedFarmId(user)
+      };
+    }
+
+    return {
+      farmId: this.requireScopedFarmId(user),
+      createdById: user.id
+    };
+  }
+
+  private buildReceiptDateWhere(
+    query: QueryPurchaseReceiptsDto
+  ): Prisma.DateTimeFilter | undefined {
+    if (!query.from && !query.to) {
+      return undefined;
+    }
+
+    const gte = query.from ? this.startOfUtcDay(query.from) : undefined;
+    const lte = query.to ? this.endOfUtcDay(query.to) : undefined;
+
+    if (gte && lte && gte.getTime() > lte.getTime()) {
+      throw new BadRequestException('Khoảng ngày không hợp lệ');
+    }
+
+    return {
+      gte,
+      lte
+    };
+  }
+
+  private startOfUtcDay(value: string): Date {
+    const date = new Date(value);
+    date.setUTCHours(0, 0, 0, 0);
+
+    return date;
+  }
+
+  private endOfUtcDay(value: string): Date {
+    const date = new Date(value);
+    date.setUTCHours(23, 59, 59, 999);
+
+    return date;
+  }
+
+  private serializeReceipt(receipt: ReceiptWithRelations): SerializedPurchaseReceipt {
     return {
       id: receipt.id,
       farmId: receipt.farmId,
@@ -554,8 +732,11 @@ export class PurchaseReceiptsService {
       note: receipt.note,
       totalAmount: receipt.totalAmount.toString(),
       createdById: receipt.createdById,
+      createdBy: this.serializeRequiredReceiptActor(receipt.createdBy),
       submittedById: receipt.submittedById,
+      submittedBy: this.serializeReceiptActor(receipt.submittedBy),
       approvedById: receipt.approvedById,
+      approvedBy: this.serializeReceiptActor(receipt.approvedBy),
       submittedAt: this.serializeDate(receipt.submittedAt),
       approvedAt: this.serializeDate(receipt.approvedAt),
       rejectedAt: this.serializeDate(receipt.rejectedAt),
@@ -565,6 +746,7 @@ export class PurchaseReceiptsService {
       clientRequestId: receipt.clientRequestId,
       createdAt: receipt.createdAt.toISOString(),
       updatedAt: receipt.updatedAt.toISOString(),
+      itemCount: receipt.items.length,
       items: receipt.items.map((item) => ({
         id: item.id,
         receiptId: item.receiptId,
@@ -576,6 +758,61 @@ export class PurchaseReceiptsService {
         lineTotal: item.lineTotal.toString(),
         createdAt: item.createdAt.toISOString()
       }))
+    };
+  }
+
+  private serializeReceiptSummary(
+    receipt: ReceiptSummaryRecord
+  ): SerializedPurchaseReceiptSummary {
+    return {
+      id: receipt.id,
+      farmId: receipt.farmId,
+      receiptCode: receipt.receiptCode,
+      receiptDate: receipt.receiptDate.toISOString(),
+      supplierName: receipt.supplierName,
+      status: receipt.status,
+      totalAmount: receipt.totalAmount.toString(),
+      createdById: receipt.createdById,
+      createdBy: this.serializeRequiredReceiptActor(receipt.createdBy),
+      submittedById: receipt.submittedById,
+      submittedBy: this.serializeReceiptActor(receipt.submittedBy),
+      approvedById: receipt.approvedById,
+      approvedBy: this.serializeReceiptActor(receipt.approvedBy),
+      submittedAt: this.serializeDate(receipt.submittedAt),
+      approvedAt: this.serializeDate(receipt.approvedAt),
+      rejectedAt: this.serializeDate(receipt.rejectedAt),
+      voidedAt: this.serializeDate(receipt.voidedAt),
+      rejectReason: receipt.rejectReason,
+      voidReason: receipt.voidReason,
+      createdAt: receipt.createdAt.toISOString(),
+      updatedAt: receipt.updatedAt.toISOString(),
+      itemCount: receipt._count.items
+    };
+  }
+
+  private serializeReceiptActor(
+    actor: ReceiptActorRecord | null | undefined
+  ): SerializedReceiptActor | null {
+    if (!actor) {
+      return null;
+    }
+
+    return {
+      id: actor.id,
+      fullName: actor.fullName,
+      username: actor.username,
+      role: actor.role
+    };
+  }
+
+  private serializeRequiredReceiptActor(
+    actor: ReceiptActorRecord
+  ): SerializedReceiptActor {
+    return {
+      id: actor.id,
+      fullName: actor.fullName,
+      username: actor.username,
+      role: actor.role
     };
   }
 
@@ -593,7 +830,7 @@ export class PurchaseReceiptsService {
 
   private assertCanSubmitReceipt(
     user: AuthUserProfile,
-    receipt: ReceiptWithItems
+    receipt: ReceiptWithRelations
   ): void {
     if (user.role === Role.ADMIN) {
       return;
@@ -613,6 +850,31 @@ export class PurchaseReceiptsService {
 
     if (user.farmId !== receipt.farmId) {
       throw new ForbiddenException('Bạn không có quyền gửi duyệt phiếu này');
+    }
+  }
+
+  private assertCanViewReceipt(
+    user: AuthUserProfile,
+    receipt: ReceiptWithRelations
+  ): void {
+    if (user.role === Role.ADMIN) {
+      return;
+    }
+
+    if (user.role === Role.MANAGER) {
+      if (user.farmId !== receipt.farmId) {
+        throw new ForbiddenException('Bạn không có quyền truy cập phiếu nhập này');
+      }
+
+      return;
+    }
+
+    if (receipt.createdById !== user.id) {
+      throw new ForbiddenException('Bạn chỉ có thể xem phiếu của mình');
+    }
+
+    if (user.farmId !== receipt.farmId) {
+      throw new ForbiddenException('Bạn không có quyền truy cập phiếu nhập này');
     }
   }
 

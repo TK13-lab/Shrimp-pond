@@ -87,6 +87,7 @@ This file maps the project documentation to the working folder layout.
 - Materials flow is live in the backend and mobile app, with admin-only write actions and staff read-only access.
 - Purchase receipt flow currently supports backend draft creation and draft submission.
 - Receipt submission now uses `PATCH /api/purchase-receipts/:id/submit`, enforces `DRAFT -> SUBMITTED`, records audit logs, and does not update inventory yet.
+- Receipt browsing now uses `GET /api/purchase-receipts` and `GET /api/purchase-receipts/:id`, with staff scoped to their own receipts and manager/admin scoped to farm-level visibility.
 - Inventory updates remain deferred to the approval transaction planned for Sprint 4.
 
 ## Git Remote
