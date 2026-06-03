@@ -22,6 +22,7 @@ model Farm {
   updatedAt DateTime @updatedAt
 
   users     User[]
+  materials Material[]
   auditLogs AuditLog[]
 }
 
@@ -93,4 +94,20 @@ model AuditLog {
   @@index([farmId])
   @@index([userId])
   @@index([entityType, entityId])
+}
+
+model Material {
+  id          String   @id @default(uuid())
+  farmId      String
+  name        String
+  defaultUnit String
+  note        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id])
+
+  @@unique([farmId, name, defaultUnit])
+  @@index([farmId])
 }

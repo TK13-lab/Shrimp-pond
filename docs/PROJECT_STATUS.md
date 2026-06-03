@@ -25,6 +25,8 @@ Date: 2026-06-01
 - Role enforcement is manually verified with a protected manager-only route: no token returns `401`, `STAFF` returns `403`, and `MANAGER` returns `200`.
 - Mobile auth flow is implemented with `AuthProvider`, secure session storage via `expo-secure-store`, a real login screen, logout handling, and a role-aware menu screen.
 - Mobile app now restores a saved session on launch, keeps tokens out of plain storage, and reads the backend base URL from `EXPO_PUBLIC_API_BASE_URL`.
+- Prisma `Material` model is implemented with `farmId`, `name`, `defaultUnit`, `note`, `isActive`, and timestamps.
+- Prisma migration `20260603080724_add_material_model` has been created and applied to local PostgreSQL, and the `Material` table is present with the expected unique constraint on `(farmId, name, defaultUnit)`.
 
 ## Understood Scope
 
@@ -51,8 +53,8 @@ Out of scope for Phase 1:
 
 Continue with Sprint 2 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Add the `Material` Prisma model and create the next migration.
-2. Implement the backend materials module and protect it by role.
+1. Implement the backend materials module and protect it by role.
+2. Add `GET /api/materials`, `POST /api/materials`, `PATCH /api/materials/:id`, and `PATCH /api/materials/:id/disable`.
 3. Connect the mobile app to `GET /materials`.
 4. Add admin-only create and update flows for materials.
 
@@ -71,3 +73,4 @@ Continue with Sprint 2 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - The Nest build output currently lands under `dist/src`, so runtime scripts use `node dist/src/main.js` and `node dist/src/smoke.js`.
 - A temporary verification route `GET /api/auth/manager-check` is present to confirm role enforcement until business modules such as materials and receipts are added.
 - For Expo mobile, `EXPO_PUBLIC_API_BASE_URL` should point to the machine hosting the NestJS API, using simulator or LAN-friendly URLs as noted in `apps/mobile/.env.example`.
+- Prisma validation in this workspace still needs `DATABASE_URL` supplied at runtime because only `.env.example` is committed.
