@@ -28,6 +28,9 @@ This file maps the project documentation to the working folder layout.
     │   │   └── migrations/
     │   ├── src/
     │   │   ├── auth/
+    │   │   │   ├── decorators/
+    │   │   │   ├── dto/
+    │   │   │   └── guards/
     │   │   ├── users/
     │   │   ├── farms/
     │   │   ├── materials/
@@ -35,9 +38,6 @@ This file maps the project documentation to the working folder layout.
     │   │   ├── inventory/
     │   │   ├── audit-logs/
     │   │   └── common/
-    │   │       ├── decorators/
-    │   │       ├── guards/
-    │   │       └── dto/
     │   └── test/
     └── mobile/
         ├── assets/

@@ -6,24 +6,17 @@ import {
   Req,
   UseGuards
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 
-import { AccessTokenGuard } from './access-token.guard';
 import { AuthService } from './auth.service';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { Roles } from './decorators/roles.decorator';
 import { LoginDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { AuthUserProfile } from './auth.types';
-
-type HeaderValue = string | string[] | undefined;
-
-type HttpRequest = {
-  headers: Record<string, HeaderValue>;
-  ip?: string | null;
-};
-
-type RequestWithUser = HttpRequest & {
-  user?: AuthUserProfile;
-};
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { AuthUserProfile, HttpRequest } from './auth.types';
 
 @Controller('auth')
 export class AuthController {
@@ -48,9 +41,20 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(AccessTokenGuard)
-  me(@Req() request: RequestWithUser) {
-    return this.authService.getMe(request.user as AuthUserProfile);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.STAFF)
+  me(@CurrentUser() user: AuthUserProfile) {
+    return this.authService.getMe(user);
+  }
+
+  @Get('manager-check')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  managerCheck(@CurrentUser() user: AuthUserProfile) {
+    return {
+      message: 'Manager access granted',
+      user
+    };
   }
 
   private getHeaderValue(request: HttpRequest, key: string): string | null {

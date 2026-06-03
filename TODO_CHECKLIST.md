@@ -16,7 +16,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S1-T1 Prisma schema base
 - [x] S1-T2 Seed demo data
 - [x] S1-T3 Auth module
-- [ ] S1-T4 Guards
+- [x] S1-T4 Guards
 - [ ] S1-T5 Mobile auth
 
 ## Notes

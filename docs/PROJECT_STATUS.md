@@ -21,6 +21,8 @@ Date: 2026-06-01
 - Local PostgreSQL now contains 1 demo farm and 6 demo users for development and manual testing.
 - Backend auth module is implemented with `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, and `GET /api/auth/me`.
 - Auth flow is manually verified against local PostgreSQL with seeded accounts, including invalid-login rejection, refresh-token rotation, and logout revocation.
+- Backend guard layer is implemented with `JwtAuthGuard`, `RolesGuard`, `@Roles`, and `@CurrentUser`.
+- Role enforcement is manually verified with a protected manager-only route: no token returns `401`, `STAFF` returns `403`, and `MANAGER` returns `200`.
 
 ## Understood Scope
 
@@ -47,10 +49,10 @@ Out of scope for Phase 1:
 
 Continue with Sprint 1 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Add JWT guards and role guards for protected backend modules.
-2. Connect the mobile placeholder screens to real auth endpoints.
-3. Keep the seeded demo accounts for manual auth testing.
-4. Start the materials module after auth and guards are stable.
+1. Connect the mobile placeholder screens to real auth endpoints.
+2. Add secure token storage and logout handling on mobile.
+3. Make the mobile menu role-aware using the authenticated user profile.
+4. Start the materials module after mobile auth is stable.
 
 ## Notes
 
@@ -65,3 +67,4 @@ Continue with Sprint 1 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - Prisma migration to local PostgreSQL required running outside the sandbox because sandbox networking could not reach `127.0.0.1:5432`.
 - Prisma `db seed` works, but Prisma 6 prints a deprecation warning for `package.json#prisma`; this is non-blocking for now and can be moved later to `prisma.config.ts`.
 - The Nest build output currently lands under `dist/src`, so runtime scripts use `node dist/src/main.js` and `node dist/src/smoke.js`.
+- A temporary verification route `GET /api/auth/manager-check` is present to confirm role enforcement until business modules such as materials and receipts are added.
