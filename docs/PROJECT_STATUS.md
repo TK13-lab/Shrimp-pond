@@ -27,6 +27,8 @@ Date: 2026-06-01
 - Mobile app now restores a saved session on launch, keeps tokens out of plain storage, and reads the backend base URL from `EXPO_PUBLIC_API_BASE_URL`.
 - Prisma `Material` model is implemented with `farmId`, `name`, `defaultUnit`, `note`, `isActive`, and timestamps.
 - Prisma migration `20260603080724_add_material_model` has been created and applied to local PostgreSQL, and the `Material` table is present with the expected unique constraint on `(farmId, name, defaultUnit)`.
+- Backend materials module is implemented with `GET /api/materials`, `POST /api/materials`, `PATCH /api/materials/:id`, and `PATCH /api/materials/:id/disable`.
+- Materials API is protected by JWT and role guards, enforces staff read-only access, checks duplicates, filters active materials for staff, and writes audit logs for create/update/disable actions.
 
 ## Understood Scope
 
@@ -53,10 +55,10 @@ Out of scope for Phase 1:
 
 Continue with Sprint 2 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Implement the backend materials module and protect it by role.
-2. Add `GET /api/materials`, `POST /api/materials`, `PATCH /api/materials/:id`, and `PATCH /api/materials/:id/disable`.
-3. Connect the mobile app to `GET /materials`.
-4. Add admin-only create and update flows for materials.
+1. Connect the mobile app to `GET /materials`.
+2. Add admin-only create and update flows for materials.
+3. Add role-aware create/edit buttons on the materials screen.
+4. Keep using backend duplicate validation and permission errors in the mobile UX.
 
 ## Notes
 
