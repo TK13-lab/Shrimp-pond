@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../auth/useAuth';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { InventoryScreen } from '../screens/inventory/InventoryScreen';
 import { MaterialFormScreen } from '../screens/materials/MaterialFormScreen';
 import { MaterialListScreen } from '../screens/materials/MaterialListScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
@@ -16,6 +17,7 @@ export type ReceiptListMode = 'all' | 'history' | 'mine' | 'submitted';
 
 export type RootStackParamList = {
   ApprovalList: undefined;
+  Inventory: undefined;
   Login: undefined;
   Menu: undefined;
   MaterialList: undefined;
@@ -69,6 +71,11 @@ export function AppNavigator() {
             name="MaterialList"
             component={MaterialListScreen}
             options={{ title: 'Danh mục vật tư' }}
+          />
+          <Stack.Screen
+            name="Inventory"
+            component={InventoryScreen}
+            options={{ title: 'Tồn kho' }}
           />
           <Stack.Screen
             name="MaterialForm"

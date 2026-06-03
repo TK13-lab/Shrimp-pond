@@ -66,6 +66,9 @@ Date: 2026-06-03
 - Mobile manager approval flow is implemented with a dedicated `ApprovalListScreen` plus approve, reject, and void actions wired to the receipt detail screen.
 - Manager and admin users can now open the submitted-receipt queue from the menu, approve immediately with confirmation, or enter a reason to reject or void a receipt without leaving the mobile flow.
 - Mobile verification confirms `npm run typecheck` passes and Expo Metro still starts successfully on `http://localhost:19001` after the new approval screens, with the existing non-blocking React Native DevTools `libasound.so.2` warning.
+- Mobile inventory browsing is implemented with a read-only `InventoryScreen` wired from the menu for manager and admin users.
+- The inventory screen supports server-side search by material name, pull-to-refresh, total inventory value summary, and shows current quantity, unit, average price, and total stock value per material.
+- Mobile verification confirms `npm run typecheck` passes and Expo Metro still starts successfully on `http://localhost:19001` after the inventory screen changes, with the existing non-blocking React Native DevTools `libasound.so.2` warning.
 
 ## Understood Scope
 
@@ -90,11 +93,11 @@ Out of scope for Phase 1:
 
 ## Next Recommended Task
 
-Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
+Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Add mobile inventory browsing for managers using `GET /api/inventory`.
-2. Add mobile inventory transaction browsing using `GET /api/inventory/transactions`.
-3. Extend the manager menu and navigation flow to surface the new inventory screens cleanly.
+1. S5-T1 - Error handling and Vietnamese messages.
+2. S5-T2 - Network error handling on mobile.
+3. S5-T3 - Security review before internal build prep.
 
 ## Notes
 

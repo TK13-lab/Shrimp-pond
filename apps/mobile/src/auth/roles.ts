@@ -32,7 +32,7 @@ export const MENU_BY_ROLE: Record<AppRole, MenuEntry[]> = {
     {
       key: 'inventory',
       title: 'Tồn kho',
-      description: 'Kiểm tra số lượng tồn và giá trị hiện tại.'
+      description: 'Kiểm tra số lượng tồn và giá trị kho hiện tại.'
     },
     {
       key: 'audit',
@@ -59,7 +59,7 @@ export const MENU_BY_ROLE: Record<AppRole, MenuEntry[]> = {
     {
       key: 'inventory',
       title: 'Tồn kho',
-      description: 'Theo dõi số lượng tồn và biến động kho.'
+      description: 'Theo dõi số lượng tồn và giá trị kho hiện tại.'
     },
     {
       key: 'materials',

@@ -97,6 +97,11 @@ export function MenuScreen({ navigation }: Props) {
       return;
     }
 
+    if (key === 'inventory') {
+      navigation.navigate('Inventory');
+      return;
+    }
+
     Alert.alert(
       'Đang phát triển',
       'Màn hình này sẽ được triển khai ở sprint tiếp theo.'
