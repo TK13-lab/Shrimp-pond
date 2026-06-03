@@ -23,6 +23,8 @@ Date: 2026-06-01
 - Auth flow is manually verified against local PostgreSQL with seeded accounts, including invalid-login rejection, refresh-token rotation, and logout revocation.
 - Backend guard layer is implemented with `JwtAuthGuard`, `RolesGuard`, `@Roles`, and `@CurrentUser`.
 - Role enforcement is manually verified with a protected manager-only route: no token returns `401`, `STAFF` returns `403`, and `MANAGER` returns `200`.
+- Mobile auth flow is implemented with `AuthProvider`, secure session storage via `expo-secure-store`, a real login screen, logout handling, and a role-aware menu screen.
+- Mobile app now restores a saved session on launch, keeps tokens out of plain storage, and reads the backend base URL from `EXPO_PUBLIC_API_BASE_URL`.
 
 ## Understood Scope
 
@@ -47,12 +49,12 @@ Out of scope for Phase 1:
 
 ## Next Recommended Task
 
-Continue with Sprint 1 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
+Continue with Sprint 2 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Connect the mobile placeholder screens to real auth endpoints.
-2. Add secure token storage and logout handling on mobile.
-3. Make the mobile menu role-aware using the authenticated user profile.
-4. Start the materials module after mobile auth is stable.
+1. Add the `Material` Prisma model and create the next migration.
+2. Implement the backend materials module and protect it by role.
+3. Connect the mobile app to `GET /materials`.
+4. Add admin-only create and update flows for materials.
 
 ## Notes
 
@@ -68,3 +70,4 @@ Continue with Sprint 1 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - Prisma `db seed` works, but Prisma 6 prints a deprecation warning for `package.json#prisma`; this is non-blocking for now and can be moved later to `prisma.config.ts`.
 - The Nest build output currently lands under `dist/src`, so runtime scripts use `node dist/src/main.js` and `node dist/src/smoke.js`.
 - A temporary verification route `GET /api/auth/manager-check` is present to confirm role enforcement until business modules such as materials and receipts are added.
+- For Expo mobile, `EXPO_PUBLIC_API_BASE_URL` should point to the machine hosting the NestJS API, using simulator or LAN-friendly URLs as noted in `apps/mobile/.env.example`.

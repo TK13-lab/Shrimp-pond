@@ -1,40 +1,53 @@
 import {
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   View
 } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { RootStackParamList } from '../../navigation/AppNavigator';
+import { MENU_BY_ROLE, ROLE_LABELS } from '../../auth/roles';
+import { useAuth } from '../../auth/useAuth';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Menu'>;
+export function MenuScreen() {
+  const { isSigningOut, signOut, user } = useAuth();
 
-const MENU_BY_ROLE: Record<RootStackParamList['Menu']['role'], string[]> = {
-  ADMIN: ['Quan ly nguoi dung', 'Danh muc vat tu', 'Phieu nhap', 'Ton kho', 'Audit log'],
-  MANAGER: ['Phieu cho duyet', 'Tao phieu nhap', 'Lich su phieu nhap', 'Ton kho', 'Danh muc vat tu', 'Audit log'],
-  STAFF: ['Tao phieu nhap', 'Phieu cua toi', 'Danh muc vat tu']
-};
+  if (!user) {
+    return null;
+  }
 
-export function MenuScreen({ route }: Props) {
-  const { role } = route.params;
-  const items = MENU_BY_ROLE[role];
+  const items = MENU_BY_ROLE[user.role];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Menu vai tro {role}</Text>
-      <Text style={styles.subtitle}>
-        Placeholder cho Sprint 0. Dieu huong va API that se duoc noi tiep o Sprint 1.
-      </Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Xin chào, {user.fullName}</Text>
+        <Text style={styles.headerSubtitle}>
+          {ROLE_LABELS[user.role]} · @{user.username}
+        </Text>
+      </View>
 
       <FlatList
         data={items}
-        keyExtractor={(item) => item}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <Text style={styles.itemText}>{item}</Text>
+            <Text style={styles.itemTitle}>{item.title}</Text>
+            <Text style={styles.itemDescription}>{item.description}</Text>
           </View>
         )}
+        ListFooterComponent={
+          <Pressable
+            disabled={isSigningOut}
+            onPress={() => void signOut()}
+            style={[styles.logoutButton, isSigningOut && styles.logoutButtonDisabled]}
+          >
+            <Text style={styles.logoutButtonText}>
+              {isSigningOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+            </Text>
+          </Pressable>
+        }
       />
     </View>
   );
@@ -43,31 +56,58 @@ export function MenuScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eef6f4',
-    padding: 20
+    backgroundColor: '#eef6f4'
   },
-  title: {
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8
+  },
+  headerTitle: {
     marginBottom: 6,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: '#134e4a'
   },
-  subtitle: {
-    marginBottom: 16,
+  headerSubtitle: {
     fontSize: 14,
-    lineHeight: 20,
     color: '#4b5563'
+  },
+  listContent: {
+    padding: 20
   },
   item: {
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 14
   },
-  itemText: {
+  itemTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#111827'
+  },
+  itemDescription: {
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4b5563'
+  },
+  logoutButton: {
+    marginTop: 8,
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: '#0f766e',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  logoutButtonDisabled: {
+    backgroundColor: '#94a3b8'
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff'
   }
 });
