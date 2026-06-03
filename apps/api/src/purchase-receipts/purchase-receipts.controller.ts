@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreatePurchaseReceiptDto } from './dto/create-purchase-receipt.dto';
 import { QueryPurchaseReceiptsDto } from './dto/query-purchase-receipts.dto';
+import { RejectPurchaseReceiptDto } from './dto/reject-purchase-receipt.dto';
 import { PurchaseReceiptsService } from './purchase-receipts.service';
 
 @Controller('purchase-receipts')
@@ -84,6 +85,25 @@ export class PurchaseReceiptsController {
       deviceId: this.getHeaderValue(request, 'x-device-id'),
       ipAddress: this.getRequestIp(request)
     });
+  }
+
+  @Patch(':id/reject')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  reject(
+    @CurrentUser() user: AuthUserProfile,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) receiptId: string,
+    @Body() rejectPurchaseReceiptDto: RejectPurchaseReceiptDto,
+    @Req() request: HttpRequest
+  ) {
+    return this.purchaseReceiptsService.reject(
+      user,
+      receiptId,
+      rejectPurchaseReceiptDto,
+      {
+        deviceId: this.getHeaderValue(request, 'x-device-id'),
+        ipAddress: this.getRequestIp(request)
+      }
+    );
   }
 
   private getHeaderValue(request: HttpRequest, key: string): string | null {

@@ -25,6 +25,7 @@ import {
   CreatePurchaseReceiptItemDto
 } from './dto/create-purchase-receipt.dto';
 import { QueryPurchaseReceiptsDto } from './dto/query-purchase-receipts.dto';
+import { RejectPurchaseReceiptDto } from './dto/reject-purchase-receipt.dto';
 
 const receiptActorSelect = {
   id: true,
@@ -408,7 +409,7 @@ export class PurchaseReceiptsService {
               throw new NotFoundException('Không tìm thấy phiếu nhập');
             }
 
-            this.assertCanApproveReceipt(user, receipt);
+            this.assertCanReviewReceipt(user, receipt, 'duyệt');
 
             if (receipt.status !== ReceiptStatus.SUBMITTED) {
               throw new ConflictException(
@@ -520,6 +521,96 @@ export class PurchaseReceiptsService {
     }
 
     throw new InternalServerErrorException('Không thể duyệt phiếu nhập');
+  }
+
+  async reject(
+    user: AuthUserProfile,
+    receiptId: string,
+    dto: RejectPurchaseReceiptDto,
+    meta: RequestMeta
+  ): Promise<SerializedPurchaseReceipt> {
+    const reason = dto.reason.trim();
+
+    const rejectedReceipt = await this.prisma.$transaction(async (tx) => {
+      const receipt = await tx.purchaseReceipt.findUnique({
+        where: {
+          id: receiptId
+        },
+        include: receiptDetailInclude
+      });
+
+      if (!receipt) {
+        throw new NotFoundException('Không tìm thấy phiếu nhập');
+      }
+
+      this.assertCanReviewReceipt(user, receipt, 'trả lại');
+
+      if (receipt.status !== ReceiptStatus.SUBMITTED) {
+        throw new ConflictException(
+          'Chỉ có thể trả lại phiếu ở trạng thái đã gửi'
+        );
+      }
+
+      const rejectedAt = new Date();
+      const statusUpdate = await tx.purchaseReceipt.updateMany({
+        where: {
+          id: receipt.id,
+          status: ReceiptStatus.SUBMITTED
+        },
+        data: {
+          status: ReceiptStatus.REJECTED,
+          rejectReason: reason,
+          rejectedAt
+        }
+      });
+
+      if (statusUpdate.count !== 1) {
+        throw new ConflictException(
+          'Phiếu nhập đã được xử lý bởi yêu cầu khác'
+        );
+      }
+
+      const nextReceipt = await tx.purchaseReceipt.findUnique({
+        where: {
+          id: receipt.id
+        },
+        include: receiptDetailInclude
+      });
+
+      if (!nextReceipt) {
+        throw new NotFoundException('Không tìm thấy phiếu nhập');
+      }
+
+      await tx.auditLog.create({
+        data: {
+          farmId: nextReceipt.farmId,
+          userId: user.id,
+          action: 'REJECT_RECEIPT',
+          entityType: 'PURCHASE_RECEIPT',
+          entityId: nextReceipt.id,
+          oldValueJson: {
+            id: receipt.id,
+            receiptCode: receipt.receiptCode,
+            status: receipt.status,
+            rejectedAt: this.serializeDate(receipt.rejectedAt),
+            rejectReason: receipt.rejectReason
+          },
+          newValueJson: {
+            id: nextReceipt.id,
+            receiptCode: nextReceipt.receiptCode,
+            status: nextReceipt.status,
+            rejectedAt: this.serializeDate(nextReceipt.rejectedAt),
+            rejectReason: nextReceipt.rejectReason
+          },
+          deviceId: meta.deviceId ?? null,
+          ipAddress: meta.ipAddress ?? null
+        }
+      });
+
+      return nextReceipt;
+    });
+
+    return this.serializeReceipt(rejectedReceipt);
   }
 
   private buildReceiptItemsData(
@@ -1184,9 +1275,10 @@ export class PurchaseReceiptsService {
     }
   }
 
-  private assertCanApproveReceipt(
+  private assertCanReviewReceipt(
     user: AuthUserProfile,
-    receipt: ReceiptWithRelations
+    receipt: ReceiptWithRelations,
+    actionLabel: string
   ): void {
     if (user.role === Role.ADMIN) {
       return;
@@ -1196,7 +1288,9 @@ export class PurchaseReceiptsService {
       return;
     }
 
-    throw new ForbiddenException('Bạn không có quyền duyệt phiếu nhập này');
+    throw new ForbiddenException(
+      `Bạn không có quyền ${actionLabel} phiếu nhập này`
+    );
   }
 
   private assertCanViewReceipt(

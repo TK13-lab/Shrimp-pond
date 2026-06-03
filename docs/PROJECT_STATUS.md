@@ -52,6 +52,9 @@ Date: 2026-06-03
 - Backend receipt approval is implemented with `PATCH /api/purchase-receipts/:id/approve`.
 - Receipt approve API only allows `MANAGER` and `ADMIN`, requires `SUBMITTED` status, updates receipt status to `APPROVED`, creates `STOCK_IN` inventory transactions, updates inventory balances with weighted average price, and writes `APPROVE_RECEIPT` audit logs inside one database transaction.
 - Manual verification against local PostgreSQL confirmed staff direct approval is blocked with `403`, manager approval updates inventory once, repeated approval returns `409`, and the audit log is written.
+- Backend receipt rejection is implemented with `PATCH /api/purchase-receipts/:id/reject`.
+- Receipt reject API only allows `MANAGER` and `ADMIN`, requires `SUBMITTED` status, stores `rejectReason` and `rejectedAt`, writes `REJECT_RECEIPT` audit logs inside a database transaction, and does not create any inventory mutation.
+- Manual verification against local PostgreSQL confirmed staff direct rejection is blocked with `403`, manager rejection stores the reason, repeated rejection returns `409`, and inventory remains unchanged.
 
 ## Understood Scope
 
@@ -78,9 +81,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Implement backend receipt rejection flow.
-2. Implement backend receipt void flow with reverse inventory transactions when needed.
-3. Add inventory read APIs for manager/admin.
+1. Implement backend receipt void flow with reverse inventory transactions when needed.
+2. Add inventory read APIs for manager/admin.
+3. Build the mobile manager approval actions on top of approve/reject APIs.
 
 ## Notes
 
