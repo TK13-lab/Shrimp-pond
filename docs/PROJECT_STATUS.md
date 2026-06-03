@@ -33,6 +33,8 @@ Date: 2026-06-01
 - Admin users can add, edit, and disable materials from the mobile app, while manager and staff stay read-only and can only browse the catalog.
 - Prisma receipt base schema is implemented with `ReceiptStatus`, `PurchaseReceipt`, `PurchaseReceiptItem`, and `IdempotencyKey`.
 - Prisma migration `20260603090306_add_purchase_receipts_base` has been created and applied to local PostgreSQL, including receipt status enum, receipt/item tables, idempotency table, and unique constraints for receipt code and client request id.
+- Backend purchase receipt creation is implemented with `POST /api/purchase-receipts`.
+- Receipt create API requires auth, accepts `clientRequestId` from body or `X-Idempotency-Key`, generates `receiptCode`, calculates line totals and total amount, starts receipts in `DRAFT`, stores idempotency keys, and writes `CREATE_RECEIPT` audit logs without touching inventory.
 
 ## Understood Scope
 
@@ -59,9 +61,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 3 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Implement `POST /api/purchase-receipts` with idempotency support.
-2. Build the mobile receipt form with item rows and local validation.
-3. Add draft-save and submit-ready validation rules.
+1. Build the mobile receipt form with item rows and local validation.
+2. Add draft-save and submit-ready validation rules.
+3. Connect mobile create flow to `POST /api/purchase-receipts`.
 4. Keep inventory changes backend-only and approval-driven.
 
 ## Notes

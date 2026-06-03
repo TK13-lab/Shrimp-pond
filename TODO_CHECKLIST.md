@@ -28,7 +28,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 ## Sprint 3 - Purchase receipt creation and submission
 
 - [x] S3-T1 Receipt schema
-- [ ] S3-T2 Receipt create API
+- [x] S3-T2 Receipt create API
 - [ ] S3-T3 Mobile receipt form
 
 ## Notes
