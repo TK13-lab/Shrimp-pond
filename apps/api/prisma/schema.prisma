@@ -7,5 +7,90 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Sprint 0 only scaffolds Prisma integration.
-// Business models will be added in Sprint 1+ from docs/06_DATABASE_SCHEMA_PRISMA.md.
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+model Farm {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  auditLogs AuditLog[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  farmId       String?
+  fullName     String
+  username     String   @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farm          Farm?          @relation(fields: [farmId], references: [id])
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  devices       Device[]
+
+  @@index([farmId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Device {
+  id         String    @id @default(uuid())
+  userId     String?
+  deviceId   String
+  deviceName String?
+  platform   String?
+  appVersion String?
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@unique([deviceId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  farmId       String?
+  userId       String?
+  action       String
+  entityType   String
+  entityId     String?
+  oldValueJson Json?
+  newValueJson Json?
+  ipAddress    String?
+  deviceId     String?
+  createdAt    DateTime @default(now())
+
+  farm Farm? @relation(fields: [farmId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([farmId])
+  @@index([userId])
+  @@index([entityType, entityId])
+}

@@ -11,6 +11,9 @@
     "start:debug": "nest start --debug --watch",
     "smoke:bootstrap": "node dist/smoke.js",
     "typecheck": "tsc --noEmit",
+    "prisma:format": "prisma format",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate:dev": "prisma migrate dev",
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
