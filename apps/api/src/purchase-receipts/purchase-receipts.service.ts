@@ -7,10 +7,12 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import {
+  InventoryTransactionType,
   Material,
   Prisma,
   PurchaseReceiptItem,
   ReceiptStatus,
+  ReferenceType,
   Role,
   User
 } from '@prisma/client';
@@ -145,6 +147,15 @@ type SerializedPurchaseReceipt = {
   updatedAt: string;
   voidReason: string | null;
   voidedAt: string | null;
+};
+
+type InventoryApprovalLine = {
+  materialId: string;
+  materialName: string;
+  quantityChange: Prisma.Decimal;
+  totalAmount: Prisma.Decimal;
+  unit: string;
+  unitPrice: Prisma.Decimal;
 };
 
 @Injectable()
@@ -377,6 +388,140 @@ export class PurchaseReceiptsService {
     return this.serializeReceipt(updatedReceipt);
   }
 
+  async approve(
+    user: AuthUserProfile,
+    receiptId: string,
+    meta: RequestMeta
+  ): Promise<SerializedPurchaseReceipt> {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const approvedReceipt = await this.prisma.$transaction(
+          async (tx) => {
+            const receipt = await tx.purchaseReceipt.findUnique({
+              where: {
+                id: receiptId
+              },
+              include: receiptDetailInclude
+            });
+
+            if (!receipt) {
+              throw new NotFoundException('Không tìm thấy phiếu nhập');
+            }
+
+            this.assertCanApproveReceipt(user, receipt);
+
+            if (receipt.status !== ReceiptStatus.SUBMITTED) {
+              throw new ConflictException(
+                'Chỉ có thể duyệt phiếu ở trạng thái đã gửi'
+              );
+            }
+
+            this.assertReceiptItemsValid(receipt.items);
+
+            const inventoryLines = await this.buildInventoryApprovalLines(
+              tx,
+              receipt
+            );
+            const approvedAt = new Date();
+            const statusUpdate = await tx.purchaseReceipt.updateMany({
+              where: {
+                id: receipt.id,
+                status: ReceiptStatus.SUBMITTED
+              },
+              data: {
+                status: ReceiptStatus.APPROVED,
+                approvedById: user.id,
+                approvedAt
+              }
+            });
+
+            if (statusUpdate.count !== 1) {
+              throw new ConflictException(
+                'Phiếu nhập đã được xử lý bởi yêu cầu khác'
+              );
+            }
+
+            for (const line of inventoryLines) {
+              await this.createInventoryTransaction(
+                tx,
+                receipt.farmId,
+                receipt.id,
+                user.id,
+                line
+              );
+              await this.applyStockInToInventoryBalance(tx, receipt.farmId, line);
+            }
+
+            const nextReceipt = await tx.purchaseReceipt.findUnique({
+              where: {
+                id: receipt.id
+              },
+              include: receiptDetailInclude
+            });
+
+            if (!nextReceipt) {
+              throw new NotFoundException('Không tìm thấy phiếu nhập');
+            }
+
+            await tx.auditLog.create({
+              data: {
+                farmId: nextReceipt.farmId,
+                userId: user.id,
+                action: 'APPROVE_RECEIPT',
+                entityType: 'PURCHASE_RECEIPT',
+                entityId: nextReceipt.id,
+                oldValueJson: {
+                  id: receipt.id,
+                  receiptCode: receipt.receiptCode,
+                  status: receipt.status,
+                  approvedById: receipt.approvedById,
+                  approvedAt: this.serializeDate(receipt.approvedAt)
+                },
+                newValueJson: {
+                  id: nextReceipt.id,
+                  receiptCode: nextReceipt.receiptCode,
+                  status: nextReceipt.status,
+                  approvedById: nextReceipt.approvedById,
+                  approvedAt: this.serializeDate(nextReceipt.approvedAt),
+                  inventoryTransactionCount: inventoryLines.length,
+                  inventoryLines: inventoryLines.map((line) => ({
+                    materialId: line.materialId,
+                    materialName: line.materialName,
+                    quantityChange: line.quantityChange.toString(),
+                    unit: line.unit,
+                    unitPrice: line.unitPrice.toString(),
+                    totalAmount: line.totalAmount.toString()
+                  }))
+                },
+                deviceId: meta.deviceId ?? null,
+                ipAddress: meta.ipAddress ?? null
+              }
+            });
+
+            return nextReceipt;
+          },
+          {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+          }
+        );
+
+        return this.serializeReceipt(approvedReceipt);
+      } catch (error) {
+        if (
+          attempt < 2 &&
+          (this.isInventoryBalanceConflict(error) ||
+            this.isSerializableWriteConflict(error))
+        ) {
+          continue;
+        }
+
+        this.rethrowApproveWriteError(error);
+      }
+    }
+
+    throw new InternalServerErrorException('Không thể duyệt phiếu nhập');
+  }
+
   private buildReceiptItemsData(
     items: ReturnType<PurchaseReceiptsService['normalizeReceiptInput']>['items'],
     materialsById: Map<string, MaterialRecord>
@@ -479,6 +624,192 @@ export class PurchaseReceiptsService {
     }
 
     return new Map(materials.map((material) => [material.id, material]));
+  }
+
+  private async buildInventoryApprovalLines(
+    tx: Prisma.TransactionClient,
+    receipt: ReceiptWithRelations
+  ): Promise<InventoryApprovalLine[]> {
+    const materialIds = this.resolveReceiptMaterialIdsForInventory(receipt.items);
+    const materials = await tx.material.findMany({
+      where: {
+        id: {
+          in: materialIds
+        },
+        farmId: receipt.farmId
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+    const materialsById = new Map(
+      materials.map((material) => [material.id, material])
+    );
+
+    if (materialsById.size !== materialIds.length) {
+      throw new NotFoundException('Có vật tư không tồn tại trong trại');
+    }
+
+    const linesByMaterialId = new Map<string, InventoryApprovalLine>();
+
+    for (const item of receipt.items) {
+      const materialId = item.materialId;
+
+      if (!materialId) {
+        throw new BadRequestException(
+          'Chỉ có thể duyệt các dòng vật tư đã liên kết danh mục'
+        );
+      }
+
+      const material = materialsById.get(materialId);
+
+      if (!material) {
+        throw new NotFoundException('Có vật tư không tồn tại trong trại');
+      }
+
+      const existingLine = linesByMaterialId.get(materialId);
+
+      if (existingLine) {
+        if (existingLine.unit !== item.unit) {
+          throw new BadRequestException(
+            'Một vật tư trong cùng phiếu nhập phải dùng cùng đơn vị tính'
+          );
+        }
+
+        existingLine.quantityChange = existingLine.quantityChange.add(
+          item.quantity
+        );
+        existingLine.totalAmount = existingLine.totalAmount.add(item.lineTotal);
+        existingLine.unitPrice = this.calculateUnitPrice(
+          existingLine.totalAmount,
+          existingLine.quantityChange
+        );
+        continue;
+      }
+
+      linesByMaterialId.set(materialId, {
+        materialId,
+        materialName: material.name,
+        quantityChange: item.quantity,
+        totalAmount: item.lineTotal,
+        unit: item.unit,
+        unitPrice: this.calculateUnitPrice(item.lineTotal, item.quantity)
+      });
+    }
+
+    return Array.from(linesByMaterialId.values());
+  }
+
+  private resolveReceiptMaterialIdsForInventory(
+    items: PurchaseReceiptItem[]
+  ): string[] {
+    const materialIds = Array.from(
+      new Set(
+        items.map((item) => {
+          if (!item.materialId) {
+            throw new BadRequestException(
+              'Chỉ có thể duyệt các dòng vật tư đã liên kết danh mục'
+            );
+          }
+
+          return item.materialId;
+        })
+      )
+    );
+
+    if (materialIds.length === 0) {
+      throw new BadRequestException('Phiếu nhập phải có vật tư để cập nhật kho');
+    }
+
+    return materialIds;
+  }
+
+  private async createInventoryTransaction(
+    tx: Prisma.TransactionClient,
+    farmId: string,
+    receiptId: string,
+    userId: string,
+    line: InventoryApprovalLine
+  ): Promise<void> {
+    await tx.inventoryTransaction.create({
+      data: {
+        farmId,
+        materialId: line.materialId,
+        transactionType: InventoryTransactionType.STOCK_IN,
+        quantityChange: line.quantityChange,
+        unit: line.unit,
+        unitPrice: line.unitPrice,
+        totalAmount: line.totalAmount,
+        referenceType: ReferenceType.PURCHASE_RECEIPT,
+        referenceId: receiptId,
+        createdById: userId
+      }
+    });
+  }
+
+  private async applyStockInToInventoryBalance(
+    tx: Prisma.TransactionClient,
+    farmId: string,
+    line: InventoryApprovalLine
+  ): Promise<void> {
+    const existingBalance = await tx.inventoryBalance.findUnique({
+      where: {
+        farmId_materialId_unit: {
+          farmId,
+          materialId: line.materialId,
+          unit: line.unit
+        }
+      }
+    });
+
+    if (!existingBalance) {
+      await tx.inventoryBalance.create({
+        data: {
+          farmId,
+          materialId: line.materialId,
+          materialName: line.materialName,
+          unit: line.unit,
+          currentQuantity: line.quantityChange,
+          averagePrice: line.unitPrice
+        }
+      });
+      return;
+    }
+
+    const nextQuantity = existingBalance.currentQuantity.add(line.quantityChange);
+    const nextTotalValue = existingBalance.currentQuantity
+      .mul(existingBalance.averagePrice)
+      .add(line.totalAmount);
+    const nextAveragePrice = nextQuantity.gt(0)
+      ? nextTotalValue.div(nextQuantity)
+      : new Prisma.Decimal(0);
+
+    await tx.inventoryBalance.update({
+      where: {
+        farmId_materialId_unit: {
+          farmId,
+          materialId: line.materialId,
+          unit: line.unit
+        }
+      },
+      data: {
+        materialName: line.materialName,
+        currentQuantity: nextQuantity,
+        averagePrice: nextAveragePrice
+      }
+    });
+  }
+
+  private calculateUnitPrice(
+    totalAmount: Prisma.Decimal,
+    quantity: Prisma.Decimal
+  ): Prisma.Decimal {
+    if (quantity.lte(0)) {
+      throw new BadRequestException('Số lượng phải lớn hơn 0');
+    }
+
+    return totalAmount.div(quantity);
   }
 
   private normalizeReceiptInput(
@@ -853,6 +1184,21 @@ export class PurchaseReceiptsService {
     }
   }
 
+  private assertCanApproveReceipt(
+    user: AuthUserProfile,
+    receipt: ReceiptWithRelations
+  ): void {
+    if (user.role === Role.ADMIN) {
+      return;
+    }
+
+    if (user.role === Role.MANAGER && user.farmId === receipt.farmId) {
+      return;
+    }
+
+    throw new ForbiddenException('Bạn không có quyền duyệt phiếu nhập này');
+  }
+
   private assertCanViewReceipt(
     user: AuthUserProfile,
     receipt: ReceiptWithRelations
@@ -932,5 +1278,56 @@ export class PurchaseReceiptsService {
     const target = Array.isArray(error.meta?.target) ? error.meta.target : [];
 
     return target.includes('receiptCode') || target.includes('farmId');
+  }
+
+  private rethrowApproveWriteError(error: unknown): never {
+    if (this.isInventoryTransactionConflict(error)) {
+      throw new ConflictException('Phiếu này đã được cập nhật tồn kho');
+    }
+
+    throw error;
+  }
+
+  private isInventoryTransactionConflict(error: unknown): boolean {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+      return false;
+    }
+
+    if (error.code !== 'P2002') {
+      return false;
+    }
+
+    const target = Array.isArray(error.meta?.target) ? error.meta.target : [];
+
+    return (
+      target.includes('referenceType') &&
+      target.includes('referenceId') &&
+      target.includes('materialId')
+    );
+  }
+
+  private isInventoryBalanceConflict(error: unknown): boolean {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+      return false;
+    }
+
+    if (error.code !== 'P2002') {
+      return false;
+    }
+
+    const target = Array.isArray(error.meta?.target) ? error.meta.target : [];
+
+    return (
+      target.includes('farmId') &&
+      target.includes('materialId') &&
+      target.includes('unit')
+    );
+  }
+
+  private isSerializableWriteConflict(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2034'
+    );
   }
 }

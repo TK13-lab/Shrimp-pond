@@ -73,6 +73,19 @@ export class PurchaseReceiptsController {
     });
   }
 
+  @Patch(':id/approve')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  approve(
+    @CurrentUser() user: AuthUserProfile,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) receiptId: string,
+    @Req() request: HttpRequest
+  ) {
+    return this.purchaseReceiptsService.approve(user, receiptId, {
+      deviceId: this.getHeaderValue(request, 'x-device-id'),
+      ipAddress: this.getRequestIp(request)
+    });
+  }
+
   private getHeaderValue(request: HttpRequest, key: string): string | null {
     const value = request.headers[key];
 

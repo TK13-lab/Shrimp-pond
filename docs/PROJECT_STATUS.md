@@ -49,6 +49,9 @@ Date: 2026-06-03
 - Receipt detail now shows actor info, status labels, timestamps, item rows, and total amount; review and void buttons are visually prepared for manager/admin but remain placeholder actions until Sprint 4 approval APIs are implemented.
 - Prisma inventory schema is implemented with `InventoryTransactionType`, `ReferenceType`, `InventoryBalance`, and `InventoryTransaction`.
 - Prisma migration `20260603100000_add_inventory_schema` has been created and applied to local PostgreSQL, including inventory balance uniqueness on `(farmId, materialId, unit)` and inventory transaction uniqueness on `(referenceType, referenceId, materialId)`.
+- Backend receipt approval is implemented with `PATCH /api/purchase-receipts/:id/approve`.
+- Receipt approve API only allows `MANAGER` and `ADMIN`, requires `SUBMITTED` status, updates receipt status to `APPROVED`, creates `STOCK_IN` inventory transactions, updates inventory balances with weighted average price, and writes `APPROVE_RECEIPT` audit logs inside one database transaction.
+- Manual verification against local PostgreSQL confirmed staff direct approval is blocked with `403`, manager approval updates inventory once, repeated approval returns `409`, and the audit log is written.
 
 ## Understood Scope
 
@@ -75,9 +78,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Implement backend receipt approval flow with a database transaction.
-2. Update inventory only when a submitted receipt is approved.
-3. Keep reject and void actions auditable and server-driven.
+1. Implement backend receipt rejection flow.
+2. Implement backend receipt void flow with reverse inventory transactions when needed.
+3. Add inventory read APIs for manager/admin.
 
 ## Notes
 
