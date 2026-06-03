@@ -61,8 +61,36 @@ export function MenuScreen({ navigation }: Props) {
   );
 
   function handleMenuPress(key: string) {
-    if (key === 'create-receipt' || key === 'receipts') {
+    if (key === 'create-receipt') {
       navigation.navigate('PurchaseReceiptForm');
+      return;
+    }
+
+    if (key === 'my-receipts') {
+      navigation.navigate('PurchaseReceiptList', {
+        mode: 'mine'
+      });
+      return;
+    }
+
+    if (key === 'history') {
+      navigation.navigate('PurchaseReceiptList', {
+        mode: 'history'
+      });
+      return;
+    }
+
+    if (key === 'approvals') {
+      navigation.navigate('PurchaseReceiptList', {
+        mode: 'submitted'
+      });
+      return;
+    }
+
+    if (key === 'receipts') {
+      navigation.navigate('PurchaseReceiptList', {
+        mode: 'all'
+      });
       return;
     }
 

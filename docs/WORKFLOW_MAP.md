@@ -89,6 +89,7 @@ This file maps the project documentation to the working folder layout.
 - Receipt submission now uses `PATCH /api/purchase-receipts/:id/submit`, enforces `DRAFT -> SUBMITTED`, records audit logs, and does not update inventory yet.
 - Receipt browsing now uses `GET /api/purchase-receipts` and `GET /api/purchase-receipts/:id`, with staff scoped to their own receipts and manager/admin scoped to farm-level visibility.
 - Mobile receipt creation now lives in `src/screens/purchaseReceipts/PurchaseReceiptFormScreen.tsx`, with quick-add active materials, local total calculation, draft save, and submit actions.
+- Mobile receipt browsing now lives in `src/screens/purchaseReceipts/PurchaseReceiptListScreen.tsx` and `src/screens/purchaseReceipts/PurchaseReceiptDetailScreen.tsx`, using the backend list/detail endpoints and role-aware menu entry points.
 - Inventory updates remain deferred to the approval transaction planned for Sprint 4.
 
 ## Git Remote

@@ -44,6 +44,9 @@ Date: 2026-06-01
 - Mobile receipt form is implemented in `PurchaseReceiptFormScreen`.
 - The form supports manual item rows, quick-add rows from active materials, local total calculation, draft save, and submit actions wired to the backend create and submit APIs.
 - Mobile submit disables action buttons while requests are pending, generates `client_request_id` locally, and warns when the user changes a saved draft because backend draft editing has not landed yet.
+- Mobile receipt browsing is implemented with `PurchaseReceiptListScreen` and `PurchaseReceiptDetailScreen`.
+- Staff can open `Phiếu của tôi`, manager can open `Phiếu chờ duyệt` and `Lịch sử phiếu nhập`, and admin can open the full receipt list from the menu.
+- Receipt detail now shows actor info, status labels, timestamps, item rows, and total amount; review and void buttons are visually prepared for manager/admin but remain placeholder actions until Sprint 4 approval APIs are implemented.
 
 ## Understood Scope
 
@@ -68,12 +71,12 @@ Out of scope for Phase 1:
 
 ## Next Recommended Task
 
-Continue with Sprint 3 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
+Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Build mobile receipt list/detail screens on top of the new browsing endpoints.
-2. Show draft and submitted receipts differently for staff versus manager/admin flows.
-3. Reuse receipt actor and status data from the new backend list/detail responses.
-4. Keep inventory changes backend-only and approval-driven until approval APIs land in Sprint 4.
+1. Add Prisma schema for inventory balances and inventory transactions.
+2. Implement backend receipt approval flow with a database transaction.
+3. Update inventory only when a submitted receipt is approved.
+4. Keep reject and void actions auditable and server-driven.
 
 ## Notes
 

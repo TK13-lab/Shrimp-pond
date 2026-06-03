@@ -6,8 +6,12 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { MaterialFormScreen } from '../screens/materials/MaterialFormScreen';
 import { MaterialListScreen } from '../screens/materials/MaterialListScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
+import { PurchaseReceiptDetailScreen } from '../screens/purchaseReceipts/PurchaseReceiptDetailScreen';
 import { PurchaseReceiptFormScreen } from '../screens/purchaseReceipts/PurchaseReceiptFormScreen';
+import { PurchaseReceiptListScreen } from '../screens/purchaseReceipts/PurchaseReceiptListScreen';
 import { Material } from '../types/materials';
+
+export type ReceiptListMode = 'all' | 'history' | 'mine' | 'submitted';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,6 +23,12 @@ export type RootStackParamList = {
         material: Material;
       };
   PurchaseReceiptForm: undefined;
+  PurchaseReceiptList: {
+    mode: ReceiptListMode;
+  };
+  PurchaseReceiptDetail: {
+    receiptId: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -62,6 +72,16 @@ export function AppNavigator() {
             name="PurchaseReceiptForm"
             component={PurchaseReceiptFormScreen}
             options={{ title: 'Tạo phiếu nhập' }}
+          />
+          <Stack.Screen
+            name="PurchaseReceiptList"
+            component={PurchaseReceiptListScreen}
+            options={{ title: 'Phiếu nhập' }}
+          />
+          <Stack.Screen
+            name="PurchaseReceiptDetail"
+            component={PurchaseReceiptDetailScreen}
+            options={{ title: 'Chi tiết phiếu nhập' }}
           />
         </>
       ) : (
