@@ -41,7 +41,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S4-T3 Reject receipt API
 - [x] S4-T4 Void receipt API
 - [x] S4-T5 Inventory API
-- [ ] S4-T6 Mobile manager approval screens
+- [x] S4-T6 Mobile manager approval screens
 - [ ] S4-T7 Mobile inventory screen
 
 ## Notes

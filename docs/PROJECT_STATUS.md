@@ -46,7 +46,7 @@ Date: 2026-06-03
 - Mobile submit disables action buttons while requests are pending, generates `client_request_id` locally, and warns when the user changes a saved draft because backend draft editing has not landed yet.
 - Mobile receipt browsing is implemented with `PurchaseReceiptListScreen` and `PurchaseReceiptDetailScreen`.
 - Staff can open `Phiếu của tôi`, manager can open `Phiếu chờ duyệt` and `Lịch sử phiếu nhập`, and admin can open the full receipt list from the menu.
-- Receipt detail now shows actor info, status labels, timestamps, item rows, and total amount; review and void buttons are visually prepared for manager/admin but remain placeholder actions until Sprint 4 approval APIs are implemented.
+- Receipt detail now shows actor info, status labels, timestamps, item rows, total amount, and manager-only review metadata including approval, rejection, and void timestamps/reasons.
 - Prisma inventory schema is implemented with `InventoryTransactionType`, `ReferenceType`, `InventoryBalance`, and `InventoryTransaction`.
 - Prisma migration `20260603100000_add_inventory_schema` has been created and applied to local PostgreSQL, including inventory balance uniqueness on `(farmId, materialId, unit)` and inventory transaction uniqueness on `(referenceType, referenceId, materialId)`.
 - Prisma `ReferenceType` now includes `PURCHASE_RECEIPT_VOID`, and migration `20260603144000_add_purchase_receipt_void_reference` has been applied to local PostgreSQL so reverse inventory transactions can reference a voided receipt without colliding with the original stock-in records.
@@ -63,6 +63,9 @@ Date: 2026-06-03
 - Inventory balance API allows `MANAGER` and `ADMIN`, supports `materialId` and `search`, returns current positive balances with `totalValue`, and respects farm scoping for manager users.
 - Inventory transaction API allows `MANAGER` and `ADMIN`, supports filtering by `materialId`, `transactionType`, `referenceType`, `referenceId`, and date range, and returns actor/material context needed for upcoming mobile screens.
 - Manual verification against local PostgreSQL confirmed manager users can read both endpoints, approved inventory appears with the expected quantity/value, and staff access is blocked with `403`.
+- Mobile manager approval flow is implemented with a dedicated `ApprovalListScreen` plus approve, reject, and void actions wired to the receipt detail screen.
+- Manager and admin users can now open the submitted-receipt queue from the menu, approve immediately with confirmation, or enter a reason to reject or void a receipt without leaving the mobile flow.
+- Mobile verification confirms `npm run typecheck` passes and Expo Metro still starts successfully on `http://localhost:19001` after the new approval screens, with the existing non-blocking React Native DevTools `libasound.so.2` warning.
 
 ## Understood Scope
 
@@ -89,9 +92,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Build the mobile manager approval actions on top of approve/reject/void APIs.
-2. Add mobile inventory browsing for managers.
-3. Wire the new inventory endpoints into the mobile API client/types.
+1. Add mobile inventory browsing for managers using `GET /api/inventory`.
+2. Add mobile inventory transaction browsing using `GET /api/inventory/transactions`.
+3. Extend the manager menu and navigation flow to surface the new inventory screens cleanly.
 
 ## Notes
 

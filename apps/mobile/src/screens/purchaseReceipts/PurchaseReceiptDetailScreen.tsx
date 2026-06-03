@@ -7,12 +7,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   Pressable
 } from 'react-native';
 
 import { ApiError } from '../../api/httpClient';
-import { getPurchaseReceipt } from '../../api/receiptApi';
+import {
+  approvePurchaseReceipt,
+  getPurchaseReceipt,
+  rejectPurchaseReceipt,
+  voidPurchaseReceipt
+} from '../../api/receiptApi';
 import { ROLE_LABELS } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
@@ -26,6 +32,7 @@ import {
 } from '../../utils/purchaseReceipts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PurchaseReceiptDetail'>;
+type ActionComposerMode = 'reject' | 'void' | null;
 
 export function PurchaseReceiptDetailScreen({ route }: Props) {
   const { user } = useAuth();
@@ -33,6 +40,16 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
   const [receipt, setReceipt] = useState<PurchaseReceiptDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
+  const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+  const [actionComposerMode, setActionComposerMode] =
+    useState<ActionComposerMode>(null);
+  const [actionReason, setActionReason] = useState('');
+  const [isApproving, setIsApproving] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const canManageReceipt = Boolean(
+    user && (user.role === 'MANAGER' || user.role === 'ADMIN')
+  );
 
   const canReviewActions = useMemo(
     () =>
@@ -53,6 +70,14 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
       ),
     [receipt?.status, user]
   );
+  const isBusy = isApproving || isSubmittingReview;
+  const shouldShowActionSection =
+    canManageReceipt &&
+    (canReviewActions ||
+      canVoidAction ||
+      Boolean(actionComposerMode) ||
+      Boolean(actionSuccessMessage) ||
+      Boolean(actionErrorMessage));
 
   const loadReceipt = useCallback(async () => {
     setIsLoading(true);
@@ -143,6 +168,30 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
           label="Thời gian gửi duyệt"
           value={formatReceiptDateTime(receipt.submittedAt)}
         />
+        <InfoRow
+          label="Người duyệt"
+          value={formatOptionalActor(receipt.approvedBy)}
+        />
+        <InfoRow
+          label="Thời gian duyệt"
+          value={formatReceiptDateTime(receipt.approvedAt)}
+        />
+        <InfoRow
+          label="Lý do trả lại"
+          value={receipt.rejectReason?.trim() || 'Chưa có'}
+        />
+        <InfoRow
+          label="Thời gian trả lại"
+          value={formatReceiptDateTime(receipt.rejectedAt)}
+        />
+        <InfoRow
+          label="Lý do hủy"
+          value={receipt.voidReason?.trim() || 'Chưa có'}
+        />
+        <InfoRow
+          label="Thời gian hủy"
+          value={formatReceiptDateTime(receipt.voidedAt)}
+        />
         <InfoRow label="Số dòng hàng hóa" value={String(receipt.itemCount)} />
       </View>
 
@@ -173,21 +222,41 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
         ))}
       </View>
 
-      {(canReviewActions || canVoidAction) && (
+      {shouldShowActionSection && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Thao tác tiếp theo</Text>
+
+          {actionSuccessMessage ? (
+            <Text style={styles.successText}>{actionSuccessMessage}</Text>
+          ) : null}
+
+          {actionErrorMessage ? (
+            <Text style={styles.errorText}>{actionErrorMessage}</Text>
+          ) : null}
 
           {canReviewActions ? (
             <View style={styles.actionRow}>
               <Pressable
-                onPress={() => showPendingAlert('duyệt phiếu')}
-                style={[styles.actionButton, styles.approveButton]}
+                disabled={isBusy}
+                onPress={() => void handleApprove()}
+                style={[
+                  styles.actionButton,
+                  styles.approveButton,
+                  isBusy && styles.actionButtonDisabled
+                ]}
               >
-                <Text style={styles.actionButtonText}>Duyệt</Text>
+                <Text style={styles.actionButtonText}>
+                  {isApproving ? 'Đang duyệt...' : 'Duyệt'}
+                </Text>
               </Pressable>
               <Pressable
-                onPress={() => showPendingAlert('trả lại phiếu')}
-                style={[styles.actionButton, styles.rejectButton]}
+                disabled={isBusy}
+                onPress={() => openReasonComposer('reject')}
+                style={[
+                  styles.actionButton,
+                  styles.rejectButton,
+                  isBusy && styles.actionButtonDisabled
+                ]}
               >
                 <Text style={styles.actionButtonText}>Trả lại</Text>
               </Pressable>
@@ -196,23 +265,166 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
 
           {canVoidAction ? (
             <Pressable
-              onPress={() => showPendingAlert('hủy phiếu')}
-              style={[styles.actionButton, styles.voidButton]}
+              disabled={isBusy}
+              onPress={() => openReasonComposer('void')}
+              style={[
+                styles.actionButton,
+                styles.voidButton,
+                isBusy && styles.actionButtonDisabled
+              ]}
             >
               <Text style={styles.actionButtonText}>Hủy phiếu</Text>
             </Pressable>
+          ) : null}
+
+          {actionComposerMode ? (
+            <View style={styles.reasonCard}>
+              <Text style={styles.reasonTitle}>
+                {actionComposerMode === 'reject'
+                  ? 'Lý do trả lại phiếu'
+                  : 'Lý do hủy phiếu'}
+              </Text>
+              <TextInput
+                editable={!isBusy}
+                multiline
+                onChangeText={setActionReason}
+                placeholder={
+                  actionComposerMode === 'reject'
+                    ? 'Ví dụ: Sai số lượng'
+                    : 'Ví dụ: Phiếu bị nhập nhầm'
+                }
+                style={styles.reasonInput}
+                textAlignVertical="top"
+                value={actionReason}
+              />
+              <View style={styles.reasonActionRow}>
+                <Pressable
+                  disabled={isBusy}
+                  onPress={closeReasonComposer}
+                  style={[styles.secondaryButton, isBusy && styles.actionButtonDisabled]}
+                >
+                  <Text style={styles.secondaryButtonText}>Bỏ qua</Text>
+                </Pressable>
+                <Pressable
+                  disabled={isBusy}
+                  onPress={() => void handleSubmitReasonAction()}
+                  style={[styles.primaryReasonButton, isBusy && styles.actionButtonDisabled]}
+                >
+                  <Text style={styles.actionButtonText}>
+                    {isSubmittingReview
+                      ? 'Đang gửi...'
+                      : actionComposerMode === 'reject'
+                        ? 'Xác nhận trả lại'
+                        : 'Xác nhận hủy'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           ) : null}
         </View>
       )}
     </ScrollView>
   );
 
-  function showPendingAlert(actionName: string) {
+  function openReasonComposer(mode: Exclude<ActionComposerMode, null>) {
+    setActionComposerMode(mode);
+    setActionReason('');
+    setActionErrorMessage(null);
+    setActionSuccessMessage(null);
+  }
+
+  function closeReasonComposer() {
+    setActionComposerMode(null);
+    setActionReason('');
+    setActionErrorMessage(null);
+  }
+
+  function handleApprove() {
     Alert.alert(
-      'Sẽ có ở Sprint 4',
-      `Chức năng ${actionName} sẽ được nối với backend approval ở sprint tiếp theo.`
+      'Xác nhận duyệt phiếu',
+      'Sau khi duyệt, tồn kho sẽ được cập nhật ngay trên máy chủ.',
+      [
+        {
+          text: 'Không',
+          style: 'cancel'
+        },
+        {
+          text: 'Duyệt',
+          onPress: () => {
+            void runApprove();
+          }
+        }
+      ]
     );
   }
+
+  async function runApprove() {
+    setIsApproving(true);
+    setActionErrorMessage(null);
+    setActionSuccessMessage(null);
+
+    try {
+      const nextReceipt = await approvePurchaseReceipt(receiptId);
+      setReceipt(nextReceipt);
+      setActionComposerMode(null);
+      setActionReason('');
+      setActionSuccessMessage(`Đã duyệt phiếu ${nextReceipt.receiptCode}.`);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setActionErrorMessage(error.message);
+      } else {
+        setActionErrorMessage('Không thể duyệt phiếu nhập.');
+      }
+    } finally {
+      setIsApproving(false);
+    }
+  }
+
+  async function handleSubmitReasonAction() {
+    const normalizedReason = actionReason.trim();
+
+    if (!actionComposerMode) {
+      return;
+    }
+
+    if (!normalizedReason) {
+      setActionErrorMessage('Vui lòng nhập lý do trước khi gửi.');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    setActionErrorMessage(null);
+    setActionSuccessMessage(null);
+
+    try {
+      const nextReceipt =
+        actionComposerMode === 'reject'
+          ? await rejectPurchaseReceipt(receiptId, normalizedReason)
+          : await voidPurchaseReceipt(receiptId, normalizedReason);
+
+      setReceipt(nextReceipt);
+      setActionComposerMode(null);
+      setActionReason('');
+      setActionSuccessMessage(
+        actionComposerMode === 'reject'
+          ? `Đã trả lại phiếu ${nextReceipt.receiptCode}.`
+          : `Đã hủy phiếu ${nextReceipt.receiptCode}.`
+      );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setActionErrorMessage(error.message);
+      } else {
+        setActionErrorMessage(
+          actionComposerMode === 'reject'
+            ? 'Không thể trả lại phiếu nhập.'
+            : 'Không thể hủy phiếu nhập.'
+        );
+      }
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  }
+
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -348,6 +560,18 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#475569'
   },
+  successText: {
+    marginBottom: 12,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#0f766e'
+  },
+  errorText: {
+    marginBottom: 12,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#b91c1c'
+  },
   actionRow: {
     flexDirection: 'row',
     gap: 12
@@ -358,6 +582,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  actionButtonDisabled: {
+    opacity: 0.6
   },
   approveButton: {
     backgroundColor: '#0f766e'
@@ -372,5 +599,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#ffffff'
+  },
+  reasonCard: {
+    marginTop: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d8e2eb',
+    backgroundColor: '#f8fafc',
+    padding: 14
+  },
+  reasonTitle: {
+    marginBottom: 10,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  reasonInput: {
+    minHeight: 96,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#0f172a'
+  },
+  reasonActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12
+  },
+  secondaryButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#94a3b8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff'
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#334155'
+  },
+  primaryReasonButton: {
+    flex: 2,
+    minHeight: 46,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0f766e'
   }
 });

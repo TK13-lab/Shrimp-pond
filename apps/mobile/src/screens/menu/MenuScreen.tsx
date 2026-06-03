@@ -81,9 +81,7 @@ export function MenuScreen({ navigation }: Props) {
     }
 
     if (key === 'approvals') {
-      navigation.navigate('PurchaseReceiptList', {
-        mode: 'submitted'
-      });
+      navigation.navigate('ApprovalList');
       return;
     }
 

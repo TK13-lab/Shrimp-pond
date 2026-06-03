@@ -1,4 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -29,6 +30,14 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PurchaseReceiptList'>;
 type FilterValue = 'ALL' | PurchaseReceiptStatus;
+type ReceiptListNavigation = Pick<
+  NativeStackNavigationProp<RootStackParamList, keyof RootStackParamList>,
+  'navigate' | 'setOptions'
+>;
+type ReceiptListScreenContentProps = {
+  mode: ReceiptListMode;
+  navigation: ReceiptListNavigation;
+};
 
 const FILTERS: FilterValue[] = [
   'ALL',
@@ -40,8 +49,19 @@ const FILTERS: FilterValue[] = [
 ];
 
 export function PurchaseReceiptListScreen({ navigation, route }: Props) {
+  return (
+    <ReceiptListScreenContent
+      navigation={navigation}
+      mode={route.params.mode}
+    />
+  );
+}
+
+export function ReceiptListScreenContent({
+  navigation,
+  mode
+}: ReceiptListScreenContentProps) {
   const { user } = useAuth();
-  const { mode } = route.params;
   const [receipts, setReceipts] = useState<PurchaseReceiptSummary[]>([]);
   const [statusFilter, setStatusFilter] = useState<FilterValue>(
     mode === 'submitted' ? 'SUBMITTED' : 'ALL'

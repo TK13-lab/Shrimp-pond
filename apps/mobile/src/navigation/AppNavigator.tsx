@@ -6,6 +6,7 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { MaterialFormScreen } from '../screens/materials/MaterialFormScreen';
 import { MaterialListScreen } from '../screens/materials/MaterialListScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
+import { ApprovalListScreen } from '../screens/purchaseReceipts/ApprovalListScreen';
 import { PurchaseReceiptDetailScreen } from '../screens/purchaseReceipts/PurchaseReceiptDetailScreen';
 import { PurchaseReceiptFormScreen } from '../screens/purchaseReceipts/PurchaseReceiptFormScreen';
 import { PurchaseReceiptListScreen } from '../screens/purchaseReceipts/PurchaseReceiptListScreen';
@@ -14,6 +15,7 @@ import { Material } from '../types/materials';
 export type ReceiptListMode = 'all' | 'history' | 'mine' | 'submitted';
 
 export type RootStackParamList = {
+  ApprovalList: undefined;
   Login: undefined;
   Menu: undefined;
   MaterialList: undefined;
@@ -57,6 +59,11 @@ export function AppNavigator() {
             name="Menu"
             component={MenuScreen}
             options={{ title: 'Trang chính', headerBackVisible: false }}
+          />
+          <Stack.Screen
+            name="ApprovalList"
+            component={ApprovalListScreen}
+            options={{ title: 'Phiếu chờ duyệt' }}
           />
           <Stack.Screen
             name="MaterialList"

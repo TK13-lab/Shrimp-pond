@@ -85,3 +85,36 @@ export function submitPurchaseReceipt(receiptId: string) {
     auth: true
   });
 }
+
+export function approvePurchaseReceipt(receiptId: string) {
+  return requestJson<PurchaseReceiptDetail>(
+    `/purchase-receipts/${receiptId}/approve`,
+    {
+      method: 'PATCH',
+      auth: true
+    }
+  );
+}
+
+export function rejectPurchaseReceipt(receiptId: string, reason: string) {
+  return requestJson<PurchaseReceiptDetail>(
+    `/purchase-receipts/${receiptId}/reject`,
+    {
+      method: 'PATCH',
+      auth: true,
+      body: {
+        reason: reason.trim()
+      }
+    }
+  );
+}
+
+export function voidPurchaseReceipt(receiptId: string, reason: string) {
+  return requestJson<PurchaseReceiptDetail>(`/purchase-receipts/${receiptId}/void`, {
+    method: 'PATCH',
+    auth: true,
+    body: {
+      reason: reason.trim()
+    }
+  });
+}
