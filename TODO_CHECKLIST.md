@@ -34,6 +34,16 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S3-T5 Mobile receipt form
 - [x] S3-T6 Mobile receipt list/detail
 
+## Sprint 4 - Approval and inventory
+
+- [x] S4-T1 Inventory schema
+- [ ] S4-T2 Approve receipt API
+- [ ] S4-T3 Reject receipt API
+- [ ] S4-T4 Void receipt API
+- [ ] S4-T5 Inventory API
+- [ ] S4-T6 Mobile manager approval screens
+- [ ] S4-T7 Mobile inventory screen
+
 ## Notes
 
 - After each completed and verified task, update this checklist.

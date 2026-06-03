@@ -1,6 +1,6 @@
 # Project Status
 
-Date: 2026-06-01
+Date: 2026-06-03
 
 ## Current State
 
@@ -47,6 +47,8 @@ Date: 2026-06-01
 - Mobile receipt browsing is implemented with `PurchaseReceiptListScreen` and `PurchaseReceiptDetailScreen`.
 - Staff can open `Phiếu của tôi`, manager can open `Phiếu chờ duyệt` and `Lịch sử phiếu nhập`, and admin can open the full receipt list from the menu.
 - Receipt detail now shows actor info, status labels, timestamps, item rows, and total amount; review and void buttons are visually prepared for manager/admin but remain placeholder actions until Sprint 4 approval APIs are implemented.
+- Prisma inventory schema is implemented with `InventoryTransactionType`, `ReferenceType`, `InventoryBalance`, and `InventoryTransaction`.
+- Prisma migration `20260603100000_add_inventory_schema` has been created and applied to local PostgreSQL, including inventory balance uniqueness on `(farmId, materialId, unit)` and inventory transaction uniqueness on `(referenceType, referenceId, materialId)`.
 
 ## Understood Scope
 
@@ -73,10 +75,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Add Prisma schema for inventory balances and inventory transactions.
-2. Implement backend receipt approval flow with a database transaction.
-3. Update inventory only when a submitted receipt is approved.
-4. Keep reject and void actions auditable and server-driven.
+1. Implement backend receipt approval flow with a database transaction.
+2. Update inventory only when a submitted receipt is approved.
+3. Keep reject and void actions auditable and server-driven.
 
 ## Notes
 
