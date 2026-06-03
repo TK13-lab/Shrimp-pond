@@ -59,6 +59,10 @@ Date: 2026-06-03
 - Backend receipt void is implemented with `PATCH /api/purchase-receipts/:id/void`.
 - Receipt void API only allows `MANAGER` and `ADMIN`, requires `APPROVED` status, stores `voidReason` and `voidedAt`, creates `STOCK_IN_VOID` reverse inventory transactions with `ReferenceType.PURCHASE_RECEIPT_VOID`, syncs inventory balances from the transaction ledger, and writes `VOID_RECEIPT` audit logs inside one database transaction.
 - Manual verification against local PostgreSQL confirmed staff direct void is blocked with `403`, manager void creates one reverse transaction, repeated void returns `409`, and the affected inventory balance returns to zero.
+- Backend inventory module is implemented with `GET /api/inventory` and `GET /api/inventory/transactions`.
+- Inventory balance API allows `MANAGER` and `ADMIN`, supports `materialId` and `search`, returns current positive balances with `totalValue`, and respects farm scoping for manager users.
+- Inventory transaction API allows `MANAGER` and `ADMIN`, supports filtering by `materialId`, `transactionType`, `referenceType`, `referenceId`, and date range, and returns actor/material context needed for upcoming mobile screens.
+- Manual verification against local PostgreSQL confirmed manager users can read both endpoints, approved inventory appears with the expected quantity/value, and staff access is blocked with `403`.
 
 ## Understood Scope
 
@@ -85,9 +89,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 4 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Add inventory read APIs for manager/admin.
-2. Build the mobile manager approval actions on top of approve/reject/void APIs.
-3. Add mobile inventory browsing for managers.
+1. Build the mobile manager approval actions on top of approve/reject/void APIs.
+2. Add mobile inventory browsing for managers.
+3. Wire the new inventory endpoints into the mobile API client/types.
 
 ## Notes
 

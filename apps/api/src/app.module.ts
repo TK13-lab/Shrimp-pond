@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { InventoryModule } from './inventory/inventory.module';
 import { MaterialsModule } from './materials/materials.module';
 import { PurchaseReceiptsModule } from './purchase-receipts/purchase-receipts.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -15,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     PrismaModule,
     AuthModule,
+    InventoryModule,
     MaterialsModule,
     PurchaseReceiptsModule,
     HealthModule
