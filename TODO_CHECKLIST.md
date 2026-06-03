@@ -25,6 +25,12 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S2-T2 Material API
 - [x] S2-T3 Mobile material screens
 
+## Sprint 3 - Purchase receipt creation and submission
+
+- [x] S3-T1 Receipt schema
+- [ ] S3-T2 Receipt create API
+- [ ] S3-T3 Mobile receipt form
+
 ## Notes
 
 - After each completed and verified task, update this checklist.

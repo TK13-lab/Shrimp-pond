@@ -13,6 +13,14 @@ enum Role {
   STAFF
 }
 
+enum ReceiptStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  VOIDED
+}
+
 model Farm {
   id        String   @id @default(uuid())
   name      String
@@ -21,9 +29,10 @@ model Farm {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  materials Material[]
-  auditLogs AuditLog[]
+  users            User[]
+  materials        Material[]
+  purchaseReceipts PurchaseReceipt[]
+  auditLogs        AuditLog[]
 }
 
 model User {
@@ -38,10 +47,14 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  farm          Farm?          @relation(fields: [farmId], references: [id])
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
-  devices       Device[]
+  farm              Farm?             @relation(fields: [farmId], references: [id])
+  createdReceipts   PurchaseReceipt[] @relation("ReceiptCreatedBy")
+  submittedReceipts PurchaseReceipt[] @relation("ReceiptSubmittedBy")
+  approvedReceipts  PurchaseReceipt[] @relation("ReceiptApprovedBy")
+  refreshTokens     RefreshToken[]
+  idempotencyKeys   IdempotencyKey[]
+  auditLogs         AuditLog[]
+  devices           Device[]
 
   @@index([farmId])
 }
@@ -106,8 +119,76 @@ model Material {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  farm Farm @relation(fields: [farmId], references: [id])
+  farm         Farm                  @relation(fields: [farmId], references: [id])
+  receiptItems PurchaseReceiptItem[]
 
   @@unique([farmId, name, defaultUnit])
   @@index([farmId])
+}
+
+model PurchaseReceipt {
+  id              String        @id @default(uuid())
+  farmId          String
+  receiptCode     String
+  receiptDate     DateTime
+  supplierName    String?
+  status          ReceiptStatus @default(DRAFT)
+  note            String?
+  totalAmount     Decimal       @default(0) @db.Decimal(14, 2)
+  createdById     String
+  submittedById   String?
+  approvedById    String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  voidedAt        DateTime?
+  rejectReason    String?
+  voidReason      String?
+  clientRequestId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  farm        Farm                  @relation(fields: [farmId], references: [id])
+  createdBy   User                  @relation("ReceiptCreatedBy", fields: [createdById], references: [id])
+  submittedBy User?                 @relation("ReceiptSubmittedBy", fields: [submittedById], references: [id])
+  approvedBy  User?                 @relation("ReceiptApprovedBy", fields: [approvedById], references: [id])
+  items       PurchaseReceiptItem[]
+
+  @@unique([farmId, receiptCode])
+  @@unique([createdById, clientRequestId])
+  @@index([farmId, status])
+  @@index([createdById])
+}
+
+model PurchaseReceiptItem {
+  id           String   @id @default(uuid())
+  receiptId    String
+  materialId   String?
+  materialName String
+  quantity     Decimal  @db.Decimal(14, 3)
+  unit         String
+  unitPrice    Decimal  @db.Decimal(14, 2)
+  lineTotal    Decimal  @db.Decimal(14, 2)
+  createdAt    DateTime @default(now())
+
+  receipt  PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  material Material?       @relation(fields: [materialId], references: [id], onDelete: SetNull)
+
+  @@index([receiptId])
+  @@index([materialId])
+}
+
+model IdempotencyKey {
+  id               String   @id @default(uuid())
+  userId           String
+  clientRequestId  String
+  requestHash      String?
+  responseEntityId String?
+  responseBody     Json?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, clientRequestId])
+  @@index([userId])
 }

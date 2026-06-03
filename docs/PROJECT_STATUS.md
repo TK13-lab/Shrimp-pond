@@ -31,6 +31,8 @@ Date: 2026-06-01
 - Materials API is protected by JWT and role guards, enforces staff read-only access, checks duplicates, filters active materials for staff, and writes audit logs for create/update/disable actions.
 - Mobile materials flow is implemented with `MaterialListScreen`, `MaterialFormScreen`, and `materialApi.ts`.
 - Admin users can add, edit, and disable materials from the mobile app, while manager and staff stay read-only and can only browse the catalog.
+- Prisma receipt base schema is implemented with `ReceiptStatus`, `PurchaseReceipt`, `PurchaseReceiptItem`, and `IdempotencyKey`.
+- Prisma migration `20260603090306_add_purchase_receipts_base` has been created and applied to local PostgreSQL, including receipt status enum, receipt/item tables, idempotency table, and unique constraints for receipt code and client request id.
 
 ## Understood Scope
 
@@ -57,9 +59,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 3 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Add purchase receipt schema models and migrations.
-2. Implement `POST /api/purchase-receipts` with idempotency support.
-3. Build the mobile receipt form with item rows and local validation.
+1. Implement `POST /api/purchase-receipts` with idempotency support.
+2. Build the mobile receipt form with item rows and local validation.
+3. Add draft-save and submit-ready validation rules.
 4. Keep inventory changes backend-only and approval-driven.
 
 ## Notes
