@@ -69,6 +69,10 @@ Date: 2026-06-03
 - Mobile inventory browsing is implemented with a read-only `InventoryScreen` wired from the menu for manager and admin users.
 - The inventory screen supports server-side search by material name, pull-to-refresh, total inventory value summary, and shows current quantity, unit, average price, and total stock value per material.
 - Mobile verification confirms `npm run typecheck` passes and Expo Metro still starts successfully on `http://localhost:19001` after the inventory screen changes, with the existing non-blocking React Native DevTools `libasound.so.2` warning.
+- Backend error handling is now standardized with a global API exception filter and a Vietnamese validation exception factory.
+- Validation failures now return stable JSON payloads with `statusCode`, `message`, `error.code`, `path`, and `timestamp`, and common framework-generated messages such as missing fields or unexpected extra fields are translated to Vietnamese.
+- Manual verification against the local API confirmed `POST /api/auth/login` with an empty body returns Vietnamese required-field messages, and the same endpoint rejects unexpected extra fields with a Vietnamese whitelist-validation message.
+- Repository verification for this hardening step confirms API `typecheck`, `build`, and `smoke:bootstrap` pass, the backend starts cleanly on localhost, and mobile `typecheck` still passes unchanged.
 
 ## Understood Scope
 
@@ -95,9 +99,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. S5-T1 - Error handling and Vietnamese messages.
-2. S5-T2 - Network error handling on mobile.
-3. S5-T3 - Security review before internal build prep.
+1. S5-T2 - Network error handling on mobile.
+2. S5-T3 - Security review before internal build prep.
+3. S5-T4 - Android build preparation.
 
 ## Notes
 

@@ -52,7 +52,7 @@ export class AuthController {
   @Roles(Role.ADMIN, Role.MANAGER)
   managerCheck(@CurrentUser() user: AuthUserProfile) {
     return {
-      message: 'Manager access granted',
+      message: 'Truy cập quản lý hợp lệ',
       user
     };
   }

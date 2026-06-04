@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 
 import { AppModule } from './app.module';
+import { ApiExceptionFilter } from './common/http/api-exception.filter';
+import { createValidationException } from './common/validation/validation-exception.factory';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -12,11 +14,13 @@ async function bootstrap(): Promise<void> {
   const port = configService.get<number>('PORT', 3000);
 
   app.setGlobalPrefix(apiPrefix);
+  app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true
+      forbidNonWhitelisted: true,
+      exceptionFactory: createValidationException
     })
   );
 

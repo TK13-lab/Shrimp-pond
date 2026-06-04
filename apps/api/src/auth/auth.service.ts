@@ -274,7 +274,7 @@ export class AuthService {
     const match = /^(\d+)([smhd])$/.exec(value.trim());
 
     if (!match) {
-      throw new Error(`Unsupported duration format: ${value}`);
+      throw new Error(`Định dạng thời lượng không được hỗ trợ: ${value}`);
     }
 
     const amount = Number(match[1]);
@@ -290,7 +290,7 @@ export class AuthService {
       case 'd':
         return amount * 24 * 60 * 60 * 1000;
       default:
-        throw new Error(`Unsupported duration unit: ${unit}`);
+        throw new Error(`Đơn vị thời lượng không được hỗ trợ: ${unit}`);
     }
   }
 
