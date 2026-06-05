@@ -85,6 +85,8 @@ Date: 2026-06-03
 - Android internal build preparation is implemented for the Expo app with package id `com.tk13lab.shrimppond`, version code `1`, and an EAS `preview` profile that produces an installable APK for internal distribution.
 - Mobile build documentation now covers `EXPO_PUBLIC_API_BASE_URL` for simulator, LAN, and deployed backends, and internal builds now show a clear Vietnamese configuration error when that variable is missing instead of silently falling back to `127.0.0.1`.
 - Mobile verification for this build-prep step confirms `npm run typecheck` still passes and Expo config resolves successfully after the Android packaging changes.
+- A dedicated demo runbook now exists at `docs/21_DEMO_SCRIPT.md`, covering the staff-to-manager approval story, expected inventory delta, cleanup via void, and current audit-log verification through backend data.
+- The current mobile snapshot still does not include a real audit-log read screen, so the demo script verifies audit logs through Prisma Studio or SQL instead of claiming an in-app screen that is not implemented yet.
 
 ## Understood Scope
 
@@ -111,9 +113,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. S5-T5 - Demo script for staff and manager flow.
-2. Re-run the end-to-end demo flow on a real device or LAN build once Android packaging is ready.
-3. Prepare the first Android internal APK with the deployed or LAN API URL outside the lab sandbox.
+1. Run the scripted demo on a real Android phone or internal APK against a LAN/deployed backend.
+2. Prepare the first Android internal APK with the deployed or LAN API URL outside the lab sandbox.
+3. Add an audit-log read API and mobile screen if on-device audit inspection becomes a release requirement.
 
 ## Notes
 
