@@ -49,7 +49,7 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S5-T1 Error handling and Vietnamese messages
 - [x] S5-T2 Network error handling on mobile
 - [x] S5-T3 Security review
-- [ ] S5-T4 Android build
+- [x] S5-T4 Android build
 - [ ] S5-T5 Demo script
 
 ## Notes

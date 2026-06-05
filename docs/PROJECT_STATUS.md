@@ -82,6 +82,9 @@ Date: 2026-06-03
 - Mobile build configuration currently requests no extra Android or iOS business permissions beyond the required `expo-secure-store` plugin, which matches the current offline-free internal workflow.
 - Backend controller review confirms role guards remain in place on materials, receipts, inventory, and `/auth/me`, while the temporary `GET /api/auth/manager-check` verification route has been removed from the app surface.
 - Backend mutation review confirms important business writes still run inside Prisma transactions and continue writing audit logs for login, materials, receipt creation/submission, approval, rejection, and void flows.
+- Android internal build preparation is implemented for the Expo app with package id `com.tk13lab.shrimppond`, version code `1`, and an EAS `preview` profile that produces an installable APK for internal distribution.
+- Mobile build documentation now covers `EXPO_PUBLIC_API_BASE_URL` for simulator, LAN, and deployed backends, and internal builds now show a clear Vietnamese configuration error when that variable is missing instead of silently falling back to `127.0.0.1`.
+- Mobile verification for this build-prep step confirms `npm run typecheck` still passes and Expo config resolves successfully after the Android packaging changes.
 
 ## Understood Scope
 
@@ -108,9 +111,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. S5-T4 - Android build preparation.
-2. S5-T5 - Demo script for staff and manager flow.
-3. Re-run the end-to-end demo flow on a real device or LAN build once Android packaging is ready.
+1. S5-T5 - Demo script for staff and manager flow.
+2. Re-run the end-to-end demo flow on a real device or LAN build once Android packaging is ready.
+3. Prepare the first Android internal APK with the deployed or LAN API URL outside the lab sandbox.
 
 ## Notes
 

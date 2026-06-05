@@ -30,6 +30,10 @@ export function getRequestErrorMessage(
 
 export function isRetryableRequestError(error: unknown): boolean {
   if (error instanceof ApiError) {
+    if (error.code === 'API_BASE_URL_MISSING') {
+      return false;
+    }
+
     return (
       error.statusCode === 0 ||
       error.statusCode === 408 ||

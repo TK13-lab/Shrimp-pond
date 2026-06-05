@@ -22,7 +22,7 @@ type RequestOptions = {
   method?: 'GET' | 'PATCH' | 'POST';
 };
 
-const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3000/api';
+const DEVELOPMENT_API_BASE_URL = 'http://127.0.0.1:3000/api';
 const REQUEST_TIMEOUT_MS = 15000;
 
 let accessToken: string | null = null;
@@ -122,9 +122,23 @@ function getApiBaseUrl(): string {
       }
     ).process?.env ?? {};
   const configuredValue = env.EXPO_PUBLIC_API_BASE_URL?.trim();
-  const baseUrl = configuredValue || DEFAULT_API_BASE_URL;
 
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  if (configuredValue) {
+    return configuredValue.endsWith('/')
+      ? configuredValue.slice(0, -1)
+      : configuredValue;
+  }
+
+  if (__DEV__) {
+    return DEVELOPMENT_API_BASE_URL;
+  }
+
+  throw new ApiError(
+    'Ứng dụng chưa được cấu hình địa chỉ máy chủ. Hãy đặt EXPO_PUBLIC_API_BASE_URL trước khi tạo bản build Android nội bộ.',
+    0,
+    null,
+    'API_BASE_URL_MISSING'
+  );
 }
 
 function normalizePath(path: string): string {

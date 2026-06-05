@@ -117,6 +117,29 @@ Week 1 target:
 Install and test on 1-2 Android phones
 ```
 
+Current repo preparation:
+
+```text
+Android package: com.tk13lab.shrimppond
+Build profile: apps/mobile/eas.json -> preview
+Output type: APK for internal install
+```
+
+Recommended steps:
+
+```bash
+cd apps/mobile
+npm install
+npx eas-cli login
+npm run build:android:preview
+```
+
+Before the build, set `EXPO_PUBLIC_API_BASE_URL` to a backend URL reachable from the phone:
+
+- Prefer deployed HTTPS for the most stable internal build.
+- For farm LAN testing, use the server LAN IP, not `127.0.0.1`.
+- If using remote EAS build, make sure `EXPO_PUBLIC_API_BASE_URL` is also set in the EAS build environment.
+
 ## Server backup
 
 Minimum:
