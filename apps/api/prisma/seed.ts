@@ -12,6 +12,13 @@ type SeedUser = {
   username: string;
 };
 
+type SeedMaterial = {
+  defaultUnit: string;
+  farmId: string;
+  name: string;
+  note?: string;
+};
+
 async function upsertUser(user: SeedUser): Promise<void> {
   const passwordHash = await hash(user.password, 10);
 
@@ -34,6 +41,29 @@ async function upsertUser(user: SeedUser): Promise<void> {
       phone: user.phone ?? null,
       passwordHash,
       role: user.role,
+      isActive: true
+    }
+  });
+}
+
+async function upsertMaterial(material: SeedMaterial): Promise<void> {
+  await prisma.material.upsert({
+    where: {
+      farmId_name_defaultUnit: {
+        farmId: material.farmId,
+        name: material.name,
+        defaultUnit: material.defaultUnit
+      }
+    },
+    update: {
+      note: material.note ?? null,
+      isActive: true
+    },
+    create: {
+      farmId: material.farmId,
+      name: material.name,
+      defaultUnit: material.defaultUnit,
+      note: material.note ?? null,
       isActive: true
     }
   });
@@ -115,6 +145,53 @@ async function main(): Promise<void> {
 
   for (const user of users) {
     await upsertUser(user);
+  }
+
+  const materials: SeedMaterial[] = [
+    {
+      farmId: farm.id,
+      name: 'Thức ăn CP 9001',
+      defaultUnit: 'bao'
+    },
+    {
+      farmId: farm.id,
+      name: 'Thức ăn Grobest',
+      defaultUnit: 'bao'
+    },
+    {
+      farmId: farm.id,
+      name: 'Men vi sinh',
+      defaultUnit: 'gói'
+    },
+    {
+      farmId: farm.id,
+      name: 'Vôi CaCO3',
+      defaultUnit: 'kg'
+    },
+    {
+      farmId: farm.id,
+      name: 'Khoáng tạt',
+      defaultUnit: 'kg'
+    },
+    {
+      farmId: farm.id,
+      name: 'Chế phẩm xử lý đáy',
+      defaultUnit: 'gói'
+    },
+    {
+      farmId: farm.id,
+      name: 'Test kit pH',
+      defaultUnit: 'bộ'
+    },
+    {
+      farmId: farm.id,
+      name: 'Test kit NH3',
+      defaultUnit: 'bộ'
+    }
+  ];
+
+  for (const material of materials) {
+    await upsertMaterial(material);
   }
 }
 

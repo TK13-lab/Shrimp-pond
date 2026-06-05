@@ -87,6 +87,9 @@ Date: 2026-06-03
 - Mobile verification for this build-prep step confirms `npm run typecheck` still passes and Expo config resolves successfully after the Android packaging changes.
 - A dedicated demo runbook now exists at `docs/21_DEMO_SCRIPT.md`, covering the staff-to-manager approval story, expected inventory delta, cleanup via void, and current audit-log verification through backend data.
 - The current mobile snapshot still does not include a real audit-log read screen, so the demo script verifies audit logs through Prisma Studio or SQL instead of claiming an in-app screen that is not implemented yet.
+- The Prisma seed script now matches the demo docs more closely by creating the standard demo materials in addition to the demo users, which makes first-run UI testing much smoother.
+- The mobile app now supports desktop browser preview through Expo web, and auth session storage falls back to browser local storage on web so login and navigation can be tested without a native simulator.
+- The NestJS API now enables CORS so the browser preview can call the same local REST endpoints as the mobile app during development.
 
 ## Understood Scope
 

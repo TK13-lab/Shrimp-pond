@@ -14,6 +14,7 @@ async function bootstrap(): Promise<void> {
   const port = configService.get<number>('PORT', 3000);
 
   app.setGlobalPrefix(apiPrefix);
+  app.enableCors();
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({

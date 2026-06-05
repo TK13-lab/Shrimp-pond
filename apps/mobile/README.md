@@ -33,8 +33,35 @@ Development still falls back to `http://127.0.0.1:3000/api` when the env var is 
 ```bash
 npm run start
 npm run start:lan
+npm run web
 npm run typecheck
 ```
+
+## Browser preview
+
+You can preview the mobile app in a desktop browser and make it look like a phone screen.
+
+Recommended local setup:
+
+1. Start PostgreSQL and the NestJS API.
+2. Run the Expo web preview:
+
+```bash
+cd apps/mobile
+npm run web
+```
+
+3. Open the local URL shown by Expo in Chrome.
+4. Press `F12`, then `Ctrl+Shift+M` to enable the mobile device frame.
+5. Choose a device preset like `iPhone 14 Pro` or `Pixel 7`.
+
+For local browser preview on the same machine, this API base URL works well:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:3000/api
+```
+
+The web preview uses browser local storage for the saved session so sign-in and screen-to-screen testing work in development.
 
 ## Android internal build
 
