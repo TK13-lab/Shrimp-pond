@@ -14,7 +14,7 @@ import {
   View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
+import { RequestNotice } from '../../components/RequestNotice';
 import { listMaterials } from '../../api/materialApi';
 import {
   createPurchaseReceipt,
@@ -25,6 +25,10 @@ import { useAuth } from '../../auth/useAuth';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 import { Material } from '../../types/materials';
 import { PurchaseReceiptDetail } from '../../types/purchaseReceipts';
+import {
+  getRequestErrorMessage,
+  isRetryableRequestError
+} from '../../utils/requestErrors';
 import { generateUuid } from '../../utils/uuid';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PurchaseReceiptForm'>;
@@ -48,6 +52,10 @@ export function PurchaseReceiptFormScreen({ navigation }: Props) {
   const [items, setItems] = useState<DraftItem[]>([createEmptyItem()]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  const [materialsErrorMessage, setMaterialsErrorMessage] = useState<string | null>(
+    null
+  );
+  const [canRetryMaterialsLoad, setCanRetryMaterialsLoad] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -65,17 +73,22 @@ export function PurchaseReceiptFormScreen({ navigation }: Props) {
     setIsLoadingMaterials(true);
 
     try {
+      setMaterialsErrorMessage(null);
+      setCanRetryMaterialsLoad(false);
       const response = await listMaterials({
         active: true
       });
 
       setMaterials(response.items);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể tải danh mục vật tư');
-      }
+      setCanRetryMaterialsLoad(isRetryableRequestError(error));
+      setMaterialsErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể tải danh mục vật tư. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsLoadingMaterials(false);
     }
@@ -236,11 +249,13 @@ export function PurchaseReceiptFormScreen({ navigation }: Props) {
       setSavedSignature(currentSignature);
       setStatusMessage(`Đã lưu nháp ${createdReceipt.receiptCode}.`);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể lưu nháp phiếu nhập. Vui lòng thử lại.');
-      }
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể lưu nháp phiếu nhập. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsSavingDraft(false);
     }
@@ -284,11 +299,13 @@ export function PurchaseReceiptFormScreen({ navigation }: Props) {
         ]
       );
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể gửi duyệt phiếu nhập. Vui lòng thử lại.');
-      }
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể gửi duyệt phiếu nhập. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -389,6 +406,41 @@ export function PurchaseReceiptFormScreen({ navigation }: Props) {
               <ActivityIndicator color="#0f766e" />
               <Text style={styles.materialStateText}>Đang tải vật tư đang dùng...</Text>
             </View>
+          ) : materialsErrorMessage ? (
+            materials.length > 0 ? (
+              <View>
+                <RequestNotice
+                  compact
+                  message={materialsErrorMessage}
+                  onRetry={
+                    canRetryMaterialsLoad ? () => void loadMaterials() : undefined
+                  }
+                />
+                <View style={styles.quickMaterialList}>
+                  {materials.map((material) => (
+                    <Pressable
+                      key={material.id}
+                      disabled={isBusy}
+                      onPress={() => handleAddMaterialRow(material)}
+                      style={[
+                        styles.quickMaterialChip,
+                        isBusy && styles.quickMaterialChipDisabled
+                      ]}
+                    >
+                      <Text style={styles.quickMaterialName}>{material.name}</Text>
+                      <Text style={styles.quickMaterialUnit}>{material.defaultUnit}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <RequestNotice
+                message={materialsErrorMessage}
+                onRetry={
+                  canRetryMaterialsLoad ? () => void loadMaterials() : undefined
+                }
+              />
+            )
           ) : materials.length > 0 ? (
             <View style={styles.quickMaterialList}>
               {materials.map((material) => (

@@ -4,15 +4,14 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
-  Pressable
+  View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
 import {
   approvePurchaseReceipt,
   getPurchaseReceipt,
@@ -21,6 +20,7 @@ import {
 } from '../../api/receiptApi';
 import { ROLE_LABELS } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
+import { RequestNotice } from '../../components/RequestNotice';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 import { PurchaseReceiptDetail } from '../../types/purchaseReceipts';
 import {
@@ -30,6 +30,10 @@ import {
   getReceiptStatusColors,
   RECEIPT_STATUS_LABELS
 } from '../../utils/purchaseReceipts';
+import {
+  getRequestErrorMessage,
+  isRetryableRequestError
+} from '../../utils/requestErrors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PurchaseReceiptDetail'>;
 type ActionComposerMode = 'reject' | 'void' | null;
@@ -47,6 +51,7 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
   const [actionReason, setActionReason] = useState('');
   const [isApproving, setIsApproving] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [canRetryLoad, setCanRetryLoad] = useState(false);
   const canManageReceipt = Boolean(
     user && (user.role === 'MANAGER' || user.role === 'ADMIN')
   );
@@ -84,14 +89,18 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
 
     try {
       setErrorMessage(null);
+      setCanRetryLoad(false);
       const response = await getPurchaseReceipt(receiptId);
       setReceipt(response);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể tải chi tiết phiếu nhập');
-      }
+      setCanRetryLoad(isRetryableRequestError(error));
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể tải chi tiết phiếu nhập. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -115,9 +124,14 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
   if (!receipt) {
     return (
       <View style={styles.stateContainer}>
-        <Text style={styles.stateText}>
-          {errorMessage ?? 'Không tìm thấy phiếu nhập.'}
-        </Text>
+        {errorMessage ? (
+          <RequestNotice
+            message={errorMessage}
+            onRetry={canRetryLoad ? () => void loadReceipt() : undefined}
+          />
+        ) : (
+          <Text style={styles.stateText}>Không tìm thấy phiếu nhập.</Text>
+        )}
       </View>
     );
   }
@@ -150,6 +164,14 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
           Tổng tiền: {formatReceiptMoney(receipt.totalAmount)}
         </Text>
       </View>
+
+      {errorMessage ? (
+        <RequestNotice
+          compact
+          message={errorMessage}
+          onRetry={canRetryLoad ? () => void loadReceipt() : undefined}
+        />
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Thông tin phiếu</Text>
@@ -370,11 +392,13 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
       setActionReason('');
       setActionSuccessMessage(`Đã duyệt phiếu ${nextReceipt.receiptCode}.`);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setActionErrorMessage(error.message);
-      } else {
-        setActionErrorMessage('Không thể duyệt phiếu nhập.');
-      }
+      setActionErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể duyệt phiếu nhập. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsApproving(false);
     }
@@ -411,20 +435,19 @@ export function PurchaseReceiptDetailScreen({ route }: Props) {
           : `Đã hủy phiếu ${nextReceipt.receiptCode}.`
       );
     } catch (error) {
-      if (error instanceof ApiError) {
-        setActionErrorMessage(error.message);
-      } else {
-        setActionErrorMessage(
+      setActionErrorMessage(
+        getRequestErrorMessage(
+          error,
           actionComposerMode === 'reject'
-            ? 'Không thể trả lại phiếu nhập.'
-            : 'Không thể hủy phiếu nhập.'
-        );
-      }
+            ? 'Không thể trả lại phiếu nhập. Vui lòng thử lại.'
+            : 'Không thể hủy phiếu nhập. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsSubmittingReview(false);
     }
   }
-
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {

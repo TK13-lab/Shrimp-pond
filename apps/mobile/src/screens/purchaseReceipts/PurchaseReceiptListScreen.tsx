@@ -12,10 +12,10 @@ import {
   View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
 import { listPurchaseReceipts } from '../../api/receiptApi';
 import { ROLE_LABELS } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
+import { RequestNotice } from '../../components/RequestNotice';
 import type { ReceiptListMode, RootStackParamList } from '../../navigation/AppNavigator';
 import {
   PurchaseReceiptStatus,
@@ -27,6 +27,10 @@ import {
   getReceiptStatusColors,
   RECEIPT_STATUS_LABELS
 } from '../../utils/purchaseReceipts';
+import {
+  getRequestErrorMessage,
+  isRetryableRequestError
+} from '../../utils/requestErrors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PurchaseReceiptList'>;
 type FilterValue = 'ALL' | PurchaseReceiptStatus;
@@ -69,6 +73,7 @@ export function ReceiptListScreenContent({
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [canRetryLoad, setCanRetryLoad] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
@@ -92,6 +97,7 @@ export function ReceiptListScreenContent({
 
       try {
         setErrorMessage(null);
+        setCanRetryLoad(false);
 
         const response = await listPurchaseReceipts({
           status: statusFilter === 'ALL' ? undefined : statusFilter
@@ -99,11 +105,14 @@ export function ReceiptListScreenContent({
 
         setReceipts(response.items);
       } catch (error) {
-        if (error instanceof ApiError) {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage('Không thể tải danh sách phiếu nhập');
-        }
+        setCanRetryLoad(isRetryableRequestError(error));
+        setErrorMessage(
+          getRequestErrorMessage(
+            error,
+            'Không thể tải danh sách phiếu nhập. Vui lòng thử lại.',
+            'authenticated'
+          )
+        );
       } finally {
         if (refreshing) {
           setIsRefreshing(false);
@@ -129,11 +138,15 @@ export function ReceiptListScreenContent({
     return FILTERS;
   }, [mode]);
 
-  const emptyMessage = errorMessage
-    ? errorMessage
-    : mode === 'submitted'
+  const emptyMessage =
+    mode === 'submitted'
       ? 'Chưa có phiếu nào đang chờ duyệt.'
       : 'Chưa có phiếu nhập phù hợp với bộ lọc hiện tại.';
+  const hasInlineLoadError = Boolean(errorMessage) && receipts.length > 0;
+
+  function handleRetryLoad() {
+    void loadReceipts(receipts.length > 0);
+  }
 
   return (
     <View style={styles.container}>
@@ -165,6 +178,15 @@ export function ReceiptListScreenContent({
           contentContainerStyle={styles.listContent}
           data={receipts}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            hasInlineLoadError ? (
+              <RequestNotice
+                compact
+                message={errorMessage ?? ''}
+                onRetry={canRetryLoad ? handleRetryLoad : undefined}
+              />
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               colors={['#0f766e']}
@@ -214,9 +236,16 @@ export function ReceiptListScreenContent({
             </Pressable>
           )}
           ListEmptyComponent={
-            <View style={styles.stateContainer}>
-              <Text style={styles.stateText}>{emptyMessage}</Text>
-            </View>
+            errorMessage ? (
+              <RequestNotice
+                message={errorMessage}
+                onRetry={canRetryLoad ? handleRetryLoad : undefined}
+              />
+            ) : (
+              <View style={styles.stateContainer}>
+                <Text style={styles.stateText}>{emptyMessage}</Text>
+              </View>
+            )
           }
         />
       )}

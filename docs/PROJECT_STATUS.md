@@ -73,6 +73,10 @@ Date: 2026-06-03
 - Validation failures now return stable JSON payloads with `statusCode`, `message`, `error.code`, `path`, and `timestamp`, and common framework-generated messages such as missing fields or unexpected extra fields are translated to Vietnamese.
 - Manual verification against the local API confirmed `POST /api/auth/login` with an empty body returns Vietnamese required-field messages, and the same endpoint rejects unexpected extra fields with a Vietnamese whitelist-validation message.
 - Repository verification for this hardening step confirms API `typecheck`, `build`, and `smoke:bootstrap` pass, the backend starts cleanly on localhost, and mobile `typecheck` still passes unchanged.
+- Mobile network handling is now standardized with a shared request-error mapper, a reusable `RequestNotice` retry component, and client-side request timeouts in `httpClient.ts`.
+- Login, materials, receipts, and inventory screens now show clearer Vietnamese messages for network loss, slow server responses, expired sessions, and backend failures, instead of each screen guessing its own fallback text.
+- Read-heavy screens now expose an explicit `Thử lại` path when loading fails, while keeping stale list/detail data visible when a refresh request fails after an earlier successful load.
+- Mobile verification for this hardening step confirms `npm run typecheck` passes after the retry/error-state refactor and Expo Metro still starts successfully on `http://localhost:19001`, with the existing non-blocking React Native DevTools `libasound.so.2` warning.
 
 ## Understood Scope
 
@@ -99,9 +103,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. S5-T2 - Network error handling on mobile.
-2. S5-T3 - Security review before internal build prep.
-3. S5-T4 - Android build preparation.
+1. S5-T3 - Security review before internal build prep.
+2. S5-T4 - Android build preparation.
+3. S5-T5 - Demo script for staff and manager flow.
 
 ## Notes
 

@@ -12,16 +12,20 @@ import {
   View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
 import { listInventory } from '../../api/inventoryApi';
 import { ROLE_LABELS } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
+import { RequestNotice } from '../../components/RequestNotice';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 import { InventoryBalance } from '../../types/inventory';
 import {
   formatReceiptDateTime,
   formatReceiptMoney
 } from '../../utils/purchaseReceipts';
+import {
+  getRequestErrorMessage,
+  isRetryableRequestError
+} from '../../utils/requestErrors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Inventory'>;
 
@@ -33,6 +37,7 @@ export function InventoryScreen(_: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [canRetryLoad, setCanRetryLoad] = useState(false);
 
   const totalValue = useMemo(
     () =>
@@ -54,6 +59,7 @@ export function InventoryScreen(_: Props) {
 
       try {
         setErrorMessage(null);
+        setCanRetryLoad(false);
 
         const response = await listInventory({
           search: searchApplied
@@ -61,11 +67,14 @@ export function InventoryScreen(_: Props) {
 
         setItems(response.items);
       } catch (error) {
-        if (error instanceof ApiError) {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage('Không thể tải tồn kho');
-        }
+        setCanRetryLoad(isRetryableRequestError(error));
+        setErrorMessage(
+          getRequestErrorMessage(
+            error,
+            'Không thể tải tồn kho. Vui lòng thử lại.',
+            'authenticated'
+          )
+        );
       } finally {
         if (refreshing) {
           setIsRefreshing(false);
@@ -87,10 +96,13 @@ export function InventoryScreen(_: Props) {
     setSearchApplied(searchDraft.trim());
   }
 
-  const emptyMessage = errorMessage
-    ? errorMessage
-    : 'Chưa có vật tư tồn kho phù hợp với bộ lọc hiện tại.';
-  const shouldShowSummary = errorMessage === null;
+  const emptyMessage = 'Chưa có vật tư tồn kho phù hợp với bộ lọc hiện tại.';
+  const shouldShowSummary = items.length > 0;
+  const hasInlineLoadError = Boolean(errorMessage) && items.length > 0;
+
+  function handleRetryLoad() {
+    void loadInventory(items.length > 0);
+  }
 
   return (
     <View style={styles.container}>
@@ -139,24 +151,40 @@ export function InventoryScreen(_: Props) {
           }
           ListHeaderComponent={
             shouldShowSummary ? (
-              <View style={styles.summaryPanel}>
-                <View style={styles.summaryBlock}>
-                  <Text style={styles.summaryLabel}>Mặt hàng còn tồn</Text>
-                  <Text style={styles.summaryValue}>{items.length}</Text>
-                </View>
-                <View style={styles.summaryBlock}>
-                  <Text style={styles.summaryLabel}>Tổng giá trị tồn</Text>
-                  <Text style={styles.summaryValue}>
-                    {formatReceiptMoney(totalValue)}
-                  </Text>
+              <View>
+                {hasInlineLoadError ? (
+                  <RequestNotice
+                    compact
+                    message={errorMessage ?? ''}
+                    onRetry={canRetryLoad ? handleRetryLoad : undefined}
+                  />
+                ) : null}
+                <View style={styles.summaryPanel}>
+                  <View style={styles.summaryBlock}>
+                    <Text style={styles.summaryLabel}>Mặt hàng còn tồn</Text>
+                    <Text style={styles.summaryValue}>{items.length}</Text>
+                  </View>
+                  <View style={styles.summaryBlock}>
+                    <Text style={styles.summaryLabel}>Tổng giá trị tồn</Text>
+                    <Text style={styles.summaryValue}>
+                      {formatReceiptMoney(totalValue)}
+                    </Text>
+                  </View>
                 </View>
               </View>
             ) : null
           }
           ListEmptyComponent={
-            <View style={styles.stateContainer}>
-              <Text style={styles.stateText}>{emptyMessage}</Text>
-            </View>
+            errorMessage ? (
+              <RequestNotice
+                message={errorMessage}
+                onRetry={canRetryLoad ? handleRetryLoad : undefined}
+              />
+            ) : (
+              <View style={styles.stateContainer}>
+                <Text style={styles.stateText}>{emptyMessage}</Text>
+              </View>
+            )
           }
           renderItem={({ item }) => (
             <View style={styles.inventoryCard}>

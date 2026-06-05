@@ -12,12 +12,16 @@ import {
   View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
 import { listMaterials } from '../../api/materialApi';
 import { ROLE_LABELS } from '../../auth/roles';
 import { useAuth } from '../../auth/useAuth';
+import { RequestNotice } from '../../components/RequestNotice';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 import { Material } from '../../types/materials';
+import {
+  getRequestErrorMessage,
+  isRetryableRequestError
+} from '../../utils/requestErrors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MaterialList'>;
 type AdminFilter = 'active' | 'all' | 'inactive';
@@ -31,6 +35,7 @@ export function MaterialListScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [canRetryLoad, setCanRetryLoad] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -60,6 +65,7 @@ export function MaterialListScreen({ navigation }: Props) {
 
       try {
         setErrorMessage(null);
+        setCanRetryLoad(false);
 
         const response = await listMaterials({
           search: searchApplied,
@@ -68,11 +74,14 @@ export function MaterialListScreen({ navigation }: Props) {
 
         setMaterials(response.items);
       } catch (error) {
-        if (error instanceof ApiError) {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage('Không thể tải danh mục vật tư');
-        }
+        setCanRetryLoad(isRetryableRequestError(error));
+        setErrorMessage(
+          getRequestErrorMessage(
+            error,
+            'Không thể tải danh mục vật tư. Vui lòng thử lại.',
+            'authenticated'
+          )
+        );
       } finally {
         if (refreshing) {
           setIsRefreshing(false);
@@ -94,9 +103,12 @@ export function MaterialListScreen({ navigation }: Props) {
     setSearchApplied(searchDraft.trim());
   }
 
-  const emptyMessage = errorMessage
-    ? errorMessage
-    : 'Chưa có vật tư phù hợp với bộ lọc hiện tại.';
+  const emptyMessage = 'Chưa có vật tư phù hợp với bộ lọc hiện tại.';
+  const hasInlineLoadError = Boolean(errorMessage) && materials.length > 0;
+
+  function handleRetryLoad() {
+    void loadMaterials(materials.length > 0);
+  }
 
   return (
     <View style={styles.container}>
@@ -160,6 +172,15 @@ export function MaterialListScreen({ navigation }: Props) {
           contentContainerStyle={styles.listContent}
           data={materials}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            hasInlineLoadError ? (
+              <RequestNotice
+                compact
+                message={errorMessage ?? ''}
+                onRetry={canRetryLoad ? handleRetryLoad : undefined}
+              />
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               colors={['#0f766e']}
@@ -215,9 +236,16 @@ export function MaterialListScreen({ navigation }: Props) {
             </View>
           )}
           ListEmptyComponent={
-            <View style={styles.stateContainer}>
-              <Text style={styles.stateText}>{emptyMessage}</Text>
-            </View>
+            errorMessage ? (
+              <RequestNotice
+                message={errorMessage}
+                onRetry={canRetryLoad ? handleRetryLoad : undefined}
+              />
+            ) : (
+              <View style={styles.stateContainer}>
+                <Text style={styles.stateText}>{emptyMessage}</Text>
+              </View>
+            )
           }
         />
       )}

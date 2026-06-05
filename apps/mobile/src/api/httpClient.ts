@@ -1,5 +1,6 @@
 type ApiErrorPayload = {
   error?: {
+    code?: string;
     message?: string | string[];
   };
   message?: string | string[];
@@ -22,6 +23,7 @@ type RequestOptions = {
 };
 
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3000/api';
+const REQUEST_TIMEOUT_MS = 15000;
 
 let accessToken: string | null = null;
 
@@ -29,7 +31,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly statusCode: number,
-    readonly payload: unknown
+    readonly payload: unknown,
+    readonly code: string | null = null
   ) {
     super(message);
     this.name = 'ApiError';
@@ -58,15 +61,40 @@ export async function requestJson<T>(
   }
 
   let response: Response;
+  const abortController =
+    typeof AbortController === 'undefined' ? null : new AbortController();
+  const timeoutId =
+    abortController === null
+      ? null
+      : setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
 
   try {
     response = await fetch(`${getApiBaseUrl()}${normalizePath(path)}`, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body ? JSON.stringify(options.body) : undefined
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: abortController?.signal
     });
-  } catch {
-    throw new ApiError('Không thể kết nối đến máy chủ', 0, null);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError(
+        'Kết nối tới máy chủ quá lâu. Vui lòng thử lại.',
+        0,
+        null,
+        'REQUEST_TIMEOUT'
+      );
+    }
+
+    throw new ApiError(
+      'Không thể kết nối tới máy chủ. Hãy kiểm tra mạng hoặc địa chỉ API rồi thử lại.',
+      0,
+      null,
+      'NETWORK_ERROR'
+    );
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
   }
 
   const rawText = await response.text();
@@ -74,9 +102,10 @@ export async function requestJson<T>(
 
   if (!response.ok) {
     throw new ApiError(
-      extractErrorMessage(payload) ?? 'Yêu cầu thất bại',
+      extractErrorMessage(payload) ?? getDefaultErrorMessage(response.status),
       response.status,
-      payload
+      payload,
+      extractErrorCode(payload)
     );
   }
 
@@ -142,4 +171,42 @@ function extractErrorMessage(payload: unknown): string | null {
   }
 
   return null;
+}
+
+function extractErrorCode(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null;
+  }
+
+  const candidate = payload as ApiErrorPayload;
+
+  if (
+    candidate.error &&
+    typeof candidate.error === 'object' &&
+    typeof candidate.error.code === 'string'
+  ) {
+    return candidate.error.code;
+  }
+
+  return null;
+}
+
+function getDefaultErrorMessage(statusCode: number): string {
+  if (statusCode === 401) {
+    return 'Bạn cần đăng nhập lại để tiếp tục.';
+  }
+
+  if (statusCode === 403) {
+    return 'Bạn không có quyền thực hiện thao tác này.';
+  }
+
+  if (statusCode === 404) {
+    return 'Không tìm thấy dữ liệu yêu cầu.';
+  }
+
+  if (statusCode >= 500) {
+    return 'Máy chủ đang tạm bận. Vui lòng thử lại sau ít phút.';
+  }
+
+  return 'Yêu cầu thất bại';
 }

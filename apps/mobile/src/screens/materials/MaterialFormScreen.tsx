@@ -13,7 +13,6 @@ import {
   View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
 import {
   createMaterial,
   disableMaterial,
@@ -21,6 +20,7 @@ import {
 } from '../../api/materialApi';
 import { useAuth } from '../../auth/useAuth';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
+import { getRequestErrorMessage } from '../../utils/requestErrors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MaterialForm'>;
 
@@ -78,11 +78,13 @@ export function MaterialFormScreen({ navigation, route }: Props) {
 
       navigation.goBack();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể lưu vật tư. Vui lòng thử lại.');
-      }
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể lưu vật tư. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsSaving(false);
     }
@@ -124,11 +126,13 @@ export function MaterialFormScreen({ navigation, route }: Props) {
       await disableMaterial(editingMaterial.id);
       navigation.goBack();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể ngừng sử dụng vật tư. Vui lòng thử lại.');
-      }
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Không thể ngừng sử dụng vật tư. Vui lòng thử lại.',
+          'authenticated'
+        )
+      );
     } finally {
       setIsDisabling(false);
     }

@@ -10,8 +10,8 @@ import {
   View
 } from 'react-native';
 
-import { ApiError } from '../../api/httpClient';
 import { useAuth } from '../../auth/useAuth';
+import { getRequestErrorMessage } from '../../utils/requestErrors';
 
 const DEMO_ACCOUNTS = ['admin / Admin@123', 'manager1 / Manager@123', 'staff1 / Staff@123'];
 
@@ -40,12 +40,13 @@ export function LoginScreen() {
         password
       });
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-        return;
-      }
-
-      setErrorMessage('Đăng nhập chưa thành công. Vui lòng thử lại.');
+      setErrorMessage(
+        getRequestErrorMessage(
+          error,
+          'Đăng nhập chưa thành công. Vui lòng thử lại.',
+          'sign-in'
+        )
+      );
     }
   }
 
