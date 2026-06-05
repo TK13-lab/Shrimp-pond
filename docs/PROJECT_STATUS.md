@@ -77,6 +77,11 @@ Date: 2026-06-03
 - Login, materials, receipts, and inventory screens now show clearer Vietnamese messages for network loss, slow server responses, expired sessions, and backend failures, instead of each screen guessing its own fallback text.
 - Read-heavy screens now expose an explicit `Thử lại` path when loading fails, while keeping stale list/detail data visible when a refresh request fails after an earlier successful load.
 - Mobile verification for this hardening step confirms `npm run typecheck` passes after the retry/error-state refactor and Expo Metro still starts successfully on `http://localhost:19001`, with the existing non-blocking React Native DevTools `libasound.so.2` warning.
+- Sprint 5 security review is completed for the current Phase 1 scope.
+- No real runtime secrets are committed in the repository; only `.env.example` templates and documentation examples remain, and the NestJS JWT module now requires `JWT_SECRET` from the runtime environment instead of falling back to a hard-coded default.
+- Mobile build configuration currently requests no extra Android or iOS business permissions beyond the required `expo-secure-store` plugin, which matches the current offline-free internal workflow.
+- Backend controller review confirms role guards remain in place on materials, receipts, inventory, and `/auth/me`, while the temporary `GET /api/auth/manager-check` verification route has been removed from the app surface.
+- Backend mutation review confirms important business writes still run inside Prisma transactions and continue writing audit logs for login, materials, receipt creation/submission, approval, rejection, and void flows.
 
 ## Understood Scope
 
@@ -103,9 +108,9 @@ Out of scope for Phase 1:
 
 Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. S5-T3 - Security review before internal build prep.
-2. S5-T4 - Android build preparation.
-3. S5-T5 - Demo script for staff and manager flow.
+1. S5-T4 - Android build preparation.
+2. S5-T5 - Demo script for staff and manager flow.
+3. Re-run the end-to-end demo flow on a real device or LAN build once Android packaging is ready.
 
 ## Notes
 
@@ -120,6 +125,5 @@ Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 - Prisma migration to local PostgreSQL required running outside the sandbox because sandbox networking could not reach `127.0.0.1:5432`.
 - Prisma `db seed` works, but Prisma 6 prints a deprecation warning for `package.json#prisma`; this is non-blocking for now and can be moved later to `prisma.config.ts`.
 - The Nest build output currently lands under `dist/src`, so runtime scripts use `node dist/src/main.js` and `node dist/src/smoke.js`.
-- A temporary verification route `GET /api/auth/manager-check` is present to confirm role enforcement until business modules such as materials and receipts are added.
 - For Expo mobile, `EXPO_PUBLIC_API_BASE_URL` should point to the machine hosting the NestJS API, using simulator or LAN-friendly URLs as noted in `apps/mobile/.env.example`.
 - Prisma validation in this workspace still needs `DATABASE_URL` supplied at runtime because only `.env.example` is committed.

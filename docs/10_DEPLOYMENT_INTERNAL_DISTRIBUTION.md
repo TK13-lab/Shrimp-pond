@@ -77,7 +77,7 @@ Backend `.env`:
 
 ```text
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/shrimp_pond
-JWT_SECRET=change_me
+JWT_SECRET=replace_with_long_random_secret
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 PORT=3000

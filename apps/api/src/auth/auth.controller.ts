@@ -47,16 +47,6 @@ export class AuthController {
     return this.authService.getMe(user);
   }
 
-  @Get('manager-check')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
-  managerCheck(@CurrentUser() user: AuthUserProfile) {
-    return {
-      message: 'Truy cập quản lý hợp lệ',
-      user
-    };
-  }
-
   private getHeaderValue(request: HttpRequest, key: string): string | null {
     const value = request.headers[key];
 

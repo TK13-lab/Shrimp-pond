@@ -14,7 +14,7 @@ import { RolesGuard } from './guards/roles.guard';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET', 'change_me_dev_only')
+        secret: configService.getOrThrow<string>('JWT_SECRET')
       })
     })
   ],
