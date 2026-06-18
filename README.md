@@ -81,6 +81,16 @@ Không đưa cho Codex một prompt quá lớn. Làm theo từng file:
 4. Làm theo từng sprint trong `docs/11_SPRINT_TASKS_FOR_CODEX.md`
 5. Copy prompt từ `docs/12_CODEX_PROMPTS.md`
 
+## CI/CD và cài Android nội bộ
+
+GitHub Actions đã có workflow kiểm tra backend/mobile và workflow build APK Android preview qua EAS.
+
+Xem hướng dẫn ở:
+
+```text
+docs/22_CICD_AND_ANDROID_INSTALL.md
+```
+
 ## Git workflow bắt buộc
 
 Sau mỗi bước/task đã hoàn thành và kiểm tra xong:

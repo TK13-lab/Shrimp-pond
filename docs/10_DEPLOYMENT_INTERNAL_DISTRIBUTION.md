@@ -89,7 +89,7 @@ Mobile `.env` or app config:
 EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api
 ```
 
-For real phone testing on LAN, use computer LAN IP:
+For real phone testing on LAN, use the server or computer LAN IP:
 
 ```text
 EXPO_PUBLIC_API_BASE_URL=http://192.168.1.xxx:3000/api
@@ -138,7 +138,13 @@ Before the build, set `EXPO_PUBLIC_API_BASE_URL` to a backend URL reachable from
 
 - Prefer deployed HTTPS for the most stable internal build.
 - For farm LAN testing, use the server LAN IP, not `127.0.0.1`.
-- If using remote EAS build, make sure `EXPO_PUBLIC_API_BASE_URL` is also set in the EAS build environment.
+- If using remote EAS build, set `EXPO_PUBLIC_API_BASE_URL` in the EAS `preview` environment.
+
+CI/CD setup and Android install steps are documented in:
+
+```text
+docs/22_CICD_AND_ANDROID_INSTALL.md
+```
 
 ## Server backup
 

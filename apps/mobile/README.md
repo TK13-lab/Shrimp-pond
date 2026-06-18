@@ -71,10 +71,12 @@ The web preview uses browser local storage for the saved session so sign-in and 
 
 Build steps:
 
-1. Set `EXPO_PUBLIC_API_BASE_URL` to a deployed HTTPS backend or a LAN URL reachable from the phone.
-2. If using remote EAS build, define the same `EXPO_PUBLIC_API_BASE_URL` in the EAS build environment.
+1. Set `EXPO_PUBLIC_API_BASE_URL` in the EAS `preview` environment to a deployed HTTPS backend or a LAN URL reachable from the phone.
+2. If building locally for development, `.env.local` may be used, but do not commit it.
 3. First time only, sign in to Expo with `npx eas-cli login`.
 4. Run `npm run build:android:preview`.
 5. Install the generated APK on manager and staff phones for internal testing.
 
 This setup is for internal distribution only in Phase 1. Do not submit it to Google Play yet.
+
+See `docs/22_CICD_AND_ANDROID_INSTALL.md` for the GitHub Actions build workflow and Android install checklist.
