@@ -20,12 +20,14 @@ type RequestOptions = {
   body?: JsonValue;
   headers?: Record<string, string>;
   method?: 'GET' | 'PATCH' | 'POST';
+  skipAuthRecovery?: boolean;
 };
 
 const DEVELOPMENT_API_BASE_URL = 'http://127.0.0.1:3000/api';
 const REQUEST_TIMEOUT_MS = 15000;
 
 let accessToken: string | null = null;
+let unauthorizedRecoveryHandler: (() => Promise<string | null>) | null = null;
 
 export class ApiError extends Error {
   constructor(
@@ -41,6 +43,12 @@ export class ApiError extends Error {
 
 export function setHttpAccessToken(token: string | null): void {
   accessToken = token;
+}
+
+export function setUnauthorizedRecoveryHandler(
+  handler: (() => Promise<string | null>) | null
+): void {
+  unauthorizedRecoveryHandler = handler;
 }
 
 export async function requestJson<T>(
@@ -97,8 +105,31 @@ export async function requestJson<T>(
     }
   }
 
-  const rawText = await response.text();
-  const payload = rawText ? safeParseJson(rawText) : null;
+  let rawText = await response.text();
+  let payload = rawText ? safeParseJson(rawText) : null;
+
+  if (
+    response.status === 401 &&
+    options.auth &&
+    !options.skipAuthRecovery &&
+    unauthorizedRecoveryHandler
+  ) {
+    const recoveredAccessToken = await unauthorizedRecoveryHandler();
+
+    if (recoveredAccessToken) {
+      headers.Authorization = `Bearer ${recoveredAccessToken}`;
+
+      response = await fetch(`${getApiBaseUrl()}${normalizePath(path)}`, {
+        method: options.method ?? 'GET',
+        headers,
+        body: options.body ? JSON.stringify(options.body) : undefined,
+        signal: abortController?.signal
+      });
+
+      rawText = await response.text();
+      payload = rawText ? safeParseJson(rawText) : null;
+    }
+  }
 
   if (!response.ok) {
     throw new ApiError(

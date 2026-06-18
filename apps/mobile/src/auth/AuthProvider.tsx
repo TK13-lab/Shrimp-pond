@@ -4,11 +4,16 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from 'react';
 
 import { getMe, login, logout, refreshSession } from '../api/authApi';
-import { ApiError, setHttpAccessToken } from '../api/httpClient';
+import {
+  ApiError,
+  setHttpAccessToken,
+  setUnauthorizedRecoveryHandler
+} from '../api/httpClient';
 
 import { AuthSession, AuthUser, LoginInput } from './auth.types';
 import {
@@ -34,6 +39,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isRestoring, setIsRestoring] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const sessionRef = useRef<AuthSession | null>(null);
+  const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const applySession = useCallback(async (nextSession: AuthSession) => {
     setHttpAccessToken(nextSession.accessToken);
@@ -46,6 +57,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSession(null);
     await clearStoredSession();
   }, []);
+
+  useEffect(() => {
+    setUnauthorizedRecoveryHandler(async () => {
+      if (refreshPromiseRef.current) {
+        return refreshPromiseRef.current;
+      }
+
+      const currentSession = sessionRef.current;
+
+      if (!currentSession?.refreshToken) {
+        return null;
+      }
+
+      refreshPromiseRef.current = refreshSession(currentSession.refreshToken)
+        .then(async (refreshedSession) => {
+          await applySession(refreshedSession);
+          return refreshedSession.accessToken;
+        })
+        .catch(async () => {
+          await clearSession();
+          return null;
+        })
+        .finally(() => {
+          refreshPromiseRef.current = null;
+        });
+
+      return refreshPromiseRef.current;
+    });
+
+    return () => {
+      setUnauthorizedRecoveryHandler(null);
+    };
+  }, [applySession, clearSession]);
 
   useEffect(() => {
     let isMounted = true;
