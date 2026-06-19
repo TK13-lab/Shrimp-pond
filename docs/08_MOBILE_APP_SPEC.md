@@ -1,5 +1,7 @@
 # 08 - Mobile app spec
 
+Mobile is now scoped to STAFF receipt entry. MANAGER and ADMIN use the responsive web portal in `apps/web`.
+
 ## Mobile stack
 
 ```text
@@ -31,12 +33,13 @@ Rules:
 
 - Show loading while logging in
 - Store access token/refresh token securely
-- Navigate by role after login
+- Navigate to the staff menu after login
+- Manager/admin accounts should be told to use the web portal
 - Show Vietnamese error message if login fails
 
 ### 2. MenuScreen
 
-Display role-aware menu.
+Display staff menu.
 
 For STAFF:
 
@@ -44,27 +47,6 @@ For STAFF:
 - Tạo phiếu nhập
 - Phiếu của tôi
 - Danh mục vật tư
-```
-
-For MANAGER:
-
-```text
-- Phiếu chờ duyệt
-- Tạo phiếu nhập
-- Lịch sử phiếu nhập
-- Tồn kho
-- Danh mục vật tư
-- Audit log
-```
-
-For ADMIN:
-
-```text
-- Quản lý người dùng
-- Danh mục vật tư
-- Phiếu nhập
-- Tồn kho
-- Audit log
 ```
 
 ### 3. MaterialListScreen
@@ -79,7 +61,7 @@ Ghi chú
 
 STAFF: read-only.
 
-MANAGER/ADMIN: create/edit depending on permission.
+Manager/admin material management should happen from web/admin workflows.
 
 ### 4. PurchaseReceiptFormScreen
 
@@ -146,21 +128,7 @@ REJECTED = Bị trả lại
 VOIDED = Đã hủy
 ```
 
-### 6. ApprovalListScreen
-
-For MANAGER/ADMIN.
-
-Show submitted receipts:
-
-```text
-Mã phiếu
-Người nhập
-Ngày nhập
-Nhà cung cấp
-Tổng tiền
-```
-
-### 7. ReceiptDetailScreen
+### 6. ReceiptDetailScreen
 
 Show:
 
@@ -176,45 +144,7 @@ Tổng tiền
 Ghi chú
 ```
 
-For manager/admin when status is SUBMITTED:
-
-```text
-Duyệt
-Trả lại
-```
-
-For manager/admin when status is APPROVED:
-
-```text
-Hủy phiếu
-```
-
-### 8. InventoryScreen
-
-Show:
-
-```text
-Tên vật tư
-Số lượng tồn
-Đơn vị tính
-Giá trung bình
-Giá trị tồn
-```
-
-Read-only.
-
-### 9. AuditLogScreen
-
-For MANAGER/ADMIN.
-
-Show:
-
-```text
-Thời gian
-Người dùng
-Hành động
-Đối tượng
-```
+Manager/admin approval, void, inventory, and audit workflows are handled by the web portal.
 
 ## API client structure
 
@@ -224,8 +154,6 @@ src/api/
   authApi.ts
   materialApi.ts
   receiptApi.ts
-  inventoryApi.ts
-  auditApi.ts
 ```
 
 ## Auth structure

@@ -480,3 +480,84 @@ APK/internal build works
 Backend deployed or running on LAN
 Demo flow works on real phone
 ```
+
+---
+
+## Sprint 6 - Responsive manager/admin web
+
+Duration: 2-3 days
+
+### Goal
+
+Manager and admin use a responsive web portal for review work. Mobile is kept for staff receipt entry.
+
+### Tasks
+
+#### S6-T1 - Update product direction
+
+Document:
+
+```text
+STAFF -> Android mobile app
+MANAGER/ADMIN -> responsive web portal
+Backend remains the source of truth
+```
+
+#### S6-T2 - Web app shell
+
+Create:
+
+```text
+apps/web
+login screen
+responsive manager/admin layout
+API base URL configuration
+session storage
+```
+
+#### S6-T3 - Approval queue
+
+Implement:
+
+```text
+GET /purchase-receipts?status=SUBMITTED
+receipt detail drawer
+approve action
+reject action with reason
+```
+
+#### S6-T4 - Receipt history
+
+Implement:
+
+```text
+receipt history list
+status filter
+date filters
+detail view
+void approved receipt with reason
+```
+
+#### S6-T5 - Inventory and deploy readiness
+
+Implement:
+
+```text
+inventory balance view
+inventory search
+Caddy static web serving
+/api reverse proxy for same-domain web calls
+```
+
+### Definition of Done
+
+```text
+Manager can log in on web
+Admin can log in on web
+Submitted receipts can be approved/rejected from web
+Approved receipts can be voided from web
+History can be viewed from web
+Inventory can be viewed from web
+Staff mobile app remains usable for receipt entry
+No secrets are hard-coded
+```

@@ -57,6 +57,12 @@ This file maps the project documentation to the working folder layout.
             ├── auth/
             ├── types/
             └── utils/
+    └── web/
+        ├── index.html
+        ├── scripts/
+        └── src/
+            ├── main.js
+            └── styles.css
 ```
 
 ## Documentation Entry Points
@@ -69,6 +75,7 @@ This file maps the project documentation to the working folder layout.
 - Prisma schema draft: `docs/06_DATABASE_SCHEMA_PRISMA.md`
 - Backend API spec: `docs/07_BACKEND_API_SPEC.md`
 - Mobile app spec: `docs/08_MOBILE_APP_SPEC.md`
+- Manager/admin web app: `apps/web`
 - Sprint tasks: `docs/11_SPRINT_TASKS_FOR_CODEX.md`
 - Acceptance tests: `docs/13_ACCEPTANCE_TEST_PLAN.md`
 
@@ -84,13 +91,13 @@ This file maps the project documentation to the working folder layout.
 
 ## Current Workflow Snapshot
 
-- Materials flow is live in the backend and mobile app, with admin-only write actions and staff read-only access.
+- Materials flow is live in the backend. Staff can browse materials from mobile, while manager/admin web is now the preferred management surface.
 - Purchase receipt flow currently supports backend draft creation and draft submission.
 - Receipt submission now uses `PATCH /api/purchase-receipts/:id/submit`, enforces `DRAFT -> SUBMITTED`, records audit logs, and does not update inventory yet.
 - Receipt browsing now uses `GET /api/purchase-receipts` and `GET /api/purchase-receipts/:id`, with staff scoped to their own receipts and manager/admin scoped to farm-level visibility.
 - Mobile receipt creation now lives in `src/screens/purchaseReceipts/PurchaseReceiptFormScreen.tsx`, with quick-add active materials, local total calculation, draft save, and submit actions.
-- Mobile receipt browsing now lives in `src/screens/purchaseReceipts/PurchaseReceiptListScreen.tsx` and `src/screens/purchaseReceipts/PurchaseReceiptDetailScreen.tsx`, using the backend list/detail endpoints and role-aware menu entry points.
-- Inventory updates remain deferred to the approval transaction planned for Sprint 4.
+- Mobile receipt browsing now lives in `src/screens/purchaseReceipts/PurchaseReceiptListScreen.tsx` and `src/screens/purchaseReceipts/PurchaseReceiptDetailScreen.tsx` for staff-owned receipts.
+- Manager/admin approval, receipt history, and inventory now live in `apps/web`.
 
 ## Git Remote
 

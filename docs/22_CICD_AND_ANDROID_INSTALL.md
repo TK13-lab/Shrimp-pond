@@ -83,6 +83,6 @@ If the app opens but cannot log in, check the API URL first. A phone cannot use 
 
 ## Recommended product path
 
-Keep React Native Expo as the primary app for farm operations.
+Keep React Native Expo as the staff app for farm-side receipt entry.
 
-Use Android APK internal distribution for staff first. For manager/admin on iOS, use the same Expo codebase later with TestFlight or EAS iOS internal distribution. A web admin panel can be added later for heavier back-office tasks, but it should not replace the mobile app in Phase 1.
+Use Android APK internal distribution for staff first. Manager and admin use the responsive web portal in `apps/web` for approvals, receipt history, and inventory. Do not prioritize iOS/TestFlight unless the web portal later proves insufficient.

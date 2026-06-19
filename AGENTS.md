@@ -1,6 +1,6 @@
 # AGENTS.md - Instructions for Codex
 
-You are working on a shrimp pond management mobile app.
+You are working on a shrimp pond management app with a staff mobile app and a manager/admin web portal.
 
 The user is a solo developer. Keep implementation simple, stable, and maintainable. Do not over-engineer.
 
@@ -44,7 +44,8 @@ The app is used by one shrimp farm operation:
 
 - 1 manager at the shrimp pond
 - 4 staff members who take turns entering data
-- The app must be installed locally on Android/iOS devices
+- Staff use a locally installed Android mobile app to enter data
+- Manager and admin use a responsive web portal instead of an iOS/mobile app
 - The main database must be stored on a server to prevent data loss when a phone is lost, reset, or replaced
 
 ## Architecture decision
@@ -52,16 +53,17 @@ The app is used by one shrimp farm operation:
 Use client-server architecture:
 
 ```text
-Mobile app -> Backend REST API -> PostgreSQL database
+Staff mobile app -> Backend REST API -> PostgreSQL database
+Manager/admin web -> Backend REST API -> PostgreSQL database
 ```
 
 Do not build a local-only app.
 
 Do not use SQLite as the main business database.
 
-Do not connect the mobile app directly to PostgreSQL.
+Do not connect the mobile app or web portal directly to PostgreSQL.
 
-The mobile app must never contain database credentials, JWT secrets, service keys, or private API keys.
+Client apps must never contain database credentials, JWT secrets, service keys, or private API keys.
 
 ## Tech stack
 
@@ -92,6 +94,19 @@ expo-secure-store for tokens
 Axios or fetch for API calls
 ```
 
+Mobile is staff-only for Phase 1 operations.
+
+### Web
+
+Use simple responsive web UI for manager/admin workflows:
+
+```text
+HTML/CSS/JavaScript or TypeScript
+REST API client modules
+Local browser session storage for web auth tokens
+No direct database access
+```
+
 ## Phase 1 scope
 
 Implement only:
@@ -106,6 +121,7 @@ Implement only:
 - Duplicate submission prevention
 - Audit logs
 - Basic internal Android build readiness
+- Responsive manager/admin web for approvals, receipt history, and inventory
 
 Do not implement yet:
 
@@ -261,7 +277,12 @@ unique(reference_type, reference_id, material_id)
   - menu
   - materials
   - purchaseReceipts
+  - staff receipt entry/list screens
+
+- Keep web screens separated:
+  - auth
   - approvals
+  - receipt history
   - inventory
 
 - Do not put database logic in controllers if services should handle it.
@@ -277,6 +298,7 @@ A task is only done when:
 - Backend starts without error
 - Prisma migration applies
 - Mobile app starts without error
+- Web portal opens without error
 - Basic manual flow works
 - Validation errors are shown
 - Unauthorized users are blocked by backend

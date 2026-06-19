@@ -52,6 +52,14 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S5-T4 Android build
 - [x] S5-T5 Demo script
 
+## Sprint 6 - Responsive manager/admin web
+
+- [x] S6-T1 Update product direction to staff-only mobile and manager/admin web
+- [x] S6-T2 Create responsive manager/admin web shell
+- [x] S6-T3 Implement submitted receipt approval queue
+- [x] S6-T4 Implement receipt history and detail actions
+- [x] S6-T5 Implement inventory view and VPS static web deploy config
+
 ## Notes
 
 - After each completed and verified task, update this checklist.

@@ -6,7 +6,7 @@ This deploy target runs the production API, PostgreSQL, and HTTPS reverse proxy 
 
 - Ubuntu 24.04 VPS
 - Public IPv4 address
-- A domain or subdomain pointing to the VPS, for example `api.example.com`
+- Domains or subdomains pointing to the VPS, for example `api.example.com` and `app.example.com`
 - Ports `80` and `443` open in the VPS firewall
 
 ## First Deploy
@@ -19,7 +19,7 @@ cd Shrimp-pond/deploy/production
 cp .env.example .env
 ```
 
-Edit `.env` with the real domain, email, database password, and JWT secret.
+Edit `.env` with the real domains, email, database password, and JWT secret.
 
 Start the stack:
 
@@ -38,6 +38,14 @@ Expected response:
 ```json
 {"service":"shrimp-pond-api","status":"ok"}
 ```
+
+Open the manager/admin web portal:
+
+```text
+https://app.example.com
+```
+
+The web portal calls the API through the same domain at `/api`.
 
 ## Seed Demo Users
 
@@ -70,3 +78,13 @@ EXPO_PUBLIC_API_BASE_URL=https://api.example.com/api
 ```
 
 Phones on any Wi-Fi or mobile data network can use the app as long as the domain is reachable.
+
+## Manager/Admin Web
+
+The Caddy service mounts `apps/web` as static files. Updates to web files are deployed with:
+
+```bash
+git pull
+cd deploy/production
+docker compose up -d caddy
+```

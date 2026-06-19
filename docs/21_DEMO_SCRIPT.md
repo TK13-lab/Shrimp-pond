@@ -2,21 +2,21 @@
 
 ## Goal
 
-Run a short Phase 1 demo on a real Android phone or LAN-connected Expo session.
+Run a short Phase 1 demo with a staff Android phone and the manager/admin web portal.
 
 Core story:
 
 ```text
 Staff logs in
 Staff creates and submits a purchase receipt
-Manager approves it
+Manager approves it on web
 Inventory changes on the backend
 Audit log evidence is visible from backend data
 ```
 
 ## Current limitation
 
-The mobile menu already reserves an `Audit log` item for manager/admin, but the read screen is still a placeholder in the current repo snapshot.
+The web portal covers approvals, receipt history, and inventory. A dedicated audit-log screen is still outside the current app surface.
 
 For this demo, verify audit logs from the backend database or Prisma Studio instead of the mobile UI.
 
@@ -27,14 +27,15 @@ For this demo, verify audit logs from the backend database or Prisma Studio inst
    - LAN example: `http://192.168.1.20:3000/api`
    - Deployed example: `https://api.your-domain.com/api`
 3. Demo users and demo materials are seeded as listed in `docs/19_SEED_DATA_AND_DEMO_USERS.md`.
-4. Use the internal APK from `S5-T4` or a LAN Expo session from `apps/mobile`.
+4. Open `apps/web` locally or the deployed web portal for the manager step.
+5. Use the internal APK from `S5-T4` or a LAN Expo session from `apps/mobile` for the staff step.
 5. Prepare a unique note for the receipt, for example:
 
 ```text
 Demo S5-T5 2026-06-05 15:00
 ```
 
-That note makes the receipt easier to find in manager history and recent audit logs.
+That note makes the receipt easier to find in web history and recent audit logs.
 
 ## Demo accounts
 
@@ -126,11 +127,11 @@ Staff can still view the receipt
 Inventory is not updated yet
 ```
 
-### 5. Manager login and approval
+### 5. Manager web login and approval
 
-1. Logout.
+1. Open the manager/admin web portal.
 2. Login as `manager1`.
-3. Open `Phiếu chờ duyệt`.
+3. Open `Chờ duyệt`.
 4. Open the receipt that matches the demo note.
 5. Approve it.
 
@@ -144,7 +145,7 @@ Receipt status becomes APPROVED
 
 ### 6. Inventory check
 
-1. From the manager menu, open `Tồn kho`.
+1. From the web portal, open `Tồn kho`.
 2. Search the three materials if needed.
 
 Expected:
@@ -201,7 +202,7 @@ Recent rows show the login, create, submit, and approve actions from the demo wi
 If you want to restore inventory to the earlier state:
 
 1. Stay logged in as `manager1`.
-2. Open `Lịch sử phiếu nhập`.
+2. Open `Lịch sử` in the web portal.
 3. Open the approved demo receipt.
 4. Void it with reason:
 

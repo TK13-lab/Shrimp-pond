@@ -1,6 +1,6 @@
 # Mobile
 
-React Native Expo app for staff, manager, and admin workflows.
+React Native Expo app for staff receipt-entry workflows.
 
 Expected Phase 1 areas:
 
@@ -9,9 +9,8 @@ Expected Phase 1 areas:
 - material list
 - purchase receipt form
 - own receipt history
-- manager approval screens
-- read-only inventory
-- audit log view for manager/admin
+
+Manager/admin workflows now live in `apps/web`.
 
 The app should use clear Vietnamese labels, large controls, and simple navigation for farm conditions.
 
@@ -75,7 +74,7 @@ Build steps:
 2. If building locally for development, `.env.local` may be used, but do not commit it.
 3. First time only, sign in to Expo with `npx eas-cli login`.
 4. Run `npm run build:android:preview`.
-5. Install the generated APK on manager and staff phones for internal testing.
+5. Install the generated APK on staff phones for internal testing.
 
 This setup is for internal distribution only in Phase 1. Do not submit it to Google Play yet.
 

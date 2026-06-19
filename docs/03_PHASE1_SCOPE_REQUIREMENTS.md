@@ -19,6 +19,13 @@ Hoàn thành flow:
 
 ## Must have
 
+### Client split
+
+```text
+STAFF: Android mobile app for receipt entry
+MANAGER/ADMIN: responsive web portal for approval, history, and inventory
+```
+
 ### Authentication
 
 - User đăng nhập bằng username/password
@@ -140,7 +147,8 @@ DISABLE_MATERIAL
 
 ## Should have
 
-- Màn hình danh sách phiếu chờ duyệt cho quản lý
+- Web danh sách phiếu chờ duyệt cho quản lý
+- Web lịch sử phiếu cho quản lý/admin
 - Màn hình lịch sử phiếu của nhân viên
 - Tìm kiếm vật tư
 - Hiển thị cảnh báo nghi nhập trùng
@@ -150,8 +158,7 @@ DISABLE_MATERIAL
 
 - Export Excel/CSV
 - Backup thủ công từ admin dashboard
-- iOS TestFlight
-- Web dashboard quản lý
+- iOS TestFlight only if web is not enough later
 
 ## Not now
 

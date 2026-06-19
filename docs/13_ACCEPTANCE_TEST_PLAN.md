@@ -18,9 +18,10 @@ staff4 / Staff@123
 1. Open mobile app.
 2. Login as `staff1`.
 3. Logout.
-4. Login as `manager1`.
-5. Logout.
-6. Login as `admin`.
+4. Open manager/admin web portal.
+5. Login as `manager1`.
+6. Logout.
+7. Login as `admin`.
 
 ### Expected
 
@@ -28,14 +29,14 @@ staff4 / Staff@123
 All valid users login successfully.
 Wrong password is rejected.
 Inactive user is rejected.
-Menu changes by role.
+Staff uses mobile; manager/admin use web.
 ```
 
 ## Test 2 - Material catalog
 
 ### Steps
 
-1. Login as admin.
+1. Login as admin or use a protected backend API/client.
 2. Create material:
    - Tên: Thức ăn CP 9001
    - Đơn vị: bao
@@ -48,7 +49,7 @@ Menu changes by role.
 ### Expected
 
 ```text
-Admin can create materials.
+Admin can create materials through protected backend access.
 Staff can view materials.
 Staff cannot see create/edit buttons.
 Duplicate material name + unit in same farm is blocked.
@@ -110,11 +111,12 @@ Inventory is not updated.
 
 ### Steps
 
-1. Login as manager1.
-2. Open Approval List.
-3. Open submitted receipt.
-4. Press approve.
-5. Open Inventory.
+1. Open manager/admin web portal.
+2. Login as manager1.
+3. Open `Chờ duyệt`.
+4. Open submitted receipt.
+5. Press approve.
+6. Open `Tồn kho`.
 
 ### Expected
 
@@ -162,7 +164,7 @@ Second response returns existing receipt or same result.
 ### Steps
 
 1. staff3 creates and submits receipt.
-2. manager1 rejects it with reason "Sai số lượng".
+2. manager1 rejects it from web with reason "Sai số lượng".
 
 ### Expected
 
@@ -212,15 +214,15 @@ Receipt is visible because data is on server.
 
 ### Steps
 
-1. Login as manager1.
-2. Open audit log.
+1. Login as manager1 or admin.
+2. Query the audit log endpoint or backend data.
 3. Login as staff1.
-4. Try to open audit log.
+4. Try to query audit logs directly.
 
 ### Expected
 
 ```text
-Manager can view audit log.
+Manager/admin can view audit evidence through protected backend access.
 Staff cannot view audit log.
 Backend returns 403 for staff.
 ```

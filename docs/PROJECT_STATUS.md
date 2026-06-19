@@ -1,6 +1,6 @@
 # Project Status
 
-Date: 2026-06-03
+Date: 2026-06-19
 
 ## Current State
 
@@ -90,6 +90,11 @@ Date: 2026-06-03
 - The Prisma seed script now matches the demo docs more closely by creating the standard demo materials in addition to the demo users, which makes first-run UI testing much smoother.
 - The mobile app now supports desktop browser preview through Expo web, and auth session storage falls back to browser local storage on web so login and navigation can be tested without a native simulator.
 - The NestJS API now enables CORS so the browser preview can call the same local REST endpoints as the mobile app during development.
+- Product direction is now split by client: STAFF uses the Android mobile app for receipt entry, while MANAGER and ADMIN use the responsive web portal for approvals, receipt history, and inventory.
+- `apps/web` is implemented as a dependency-free responsive web portal with login, API URL configuration, submitted receipt queue, receipt detail drawer, approve/reject actions, history filters, void action, and inventory search.
+- The mobile menu now treats MANAGER and ADMIN as web-only users, while preserving STAFF receipt-entry flows in the Android app.
+- Production deployment now supports `WEB_DOMAIN` in Caddy, serves `apps/web` as static files, and reverse proxies `/api/*` to the NestJS API for same-domain web calls.
+- CI now includes a Manager/Admin Web job that runs the web JavaScript syntax check.
 
 ## Understood Scope
 
@@ -97,7 +102,7 @@ Phase 1 is an internal MVP for material purchase receipts:
 
 - Staff log in and create draft purchase receipts.
 - Staff submit receipts for manager review.
-- Manager or admin approve, reject, or void receipts.
+- Manager or admin approve, reject, or void receipts from web.
 - Inventory changes only on backend approval, inside a database transaction.
 - Duplicate receipt submission is prevented with `client_request_id` / idempotency.
 - Important actions are recorded in audit logs.
@@ -114,11 +119,11 @@ Out of scope for Phase 1:
 
 ## Next Recommended Task
 
-Continue with Sprint 5 from `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
+Continue from Sprint 6 in `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Run the scripted demo on a real Android phone or internal APK against a LAN/deployed backend.
-2. Prepare the first Android internal APK with the deployed or LAN API URL outside the lab sandbox.
-3. Add an audit-log read API and mobile screen if on-device audit inspection becomes a release requirement.
+1. Run the scripted demo with staff on Android and manager/admin on the web portal against a LAN/deployed backend.
+2. Add a dedicated web audit-log screen if in-app audit inspection becomes a release requirement.
+3. Add admin user/farm/material management screens to the web portal after the approval/history flow is stable.
 
 ## Notes
 

@@ -9,7 +9,7 @@ Date: 2026-06-01
 Decision:
 
 ```text
-Use mobile app + backend API + PostgreSQL server.
+Use staff mobile app + manager/admin web + backend API + PostgreSQL server.
 ```
 
 Reason:
@@ -28,6 +28,7 @@ Need backend deployment.
 Need authentication.
 Need server backup.
 Mobile needs network for real submission.
+Web needs HTTPS in production.
 ```
 
 ---
@@ -86,6 +87,27 @@ Reason:
 
 ```text
 Prevent duplicate receipt creation if user taps submit twice or network retries.
+```
+
+---
+
+## Decision 005 - Manager/admin use web portal
+
+Date: 2026-06-19
+
+Decision:
+
+```text
+Mobile app is staff-only for Phase 1.
+Manager and admin use responsive web for approvals, receipt history, and inventory.
+```
+
+Reason:
+
+```text
+Avoid iOS/TestFlight overhead for manager use.
+Make approval and history screens easier on desktop and iPhone browsers.
+Keep staff field entry simple on Android.
 ```
 
 ---

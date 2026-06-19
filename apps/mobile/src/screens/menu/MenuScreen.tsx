@@ -21,6 +21,37 @@ export function MenuScreen({ navigation }: Props) {
     return null;
   }
 
+  if (user.role !== 'STAFF') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Xin chào, {user.fullName}</Text>
+          <Text style={styles.headerSubtitle}>
+            {ROLE_LABELS[user.role]} · @{user.username}
+          </Text>
+        </View>
+
+        <View style={styles.webOnlyPanel}>
+          <Text style={styles.webOnlyTitle}>Tài khoản quản lý dùng web</Text>
+          <Text style={styles.webOnlyText}>
+            App Android hiện dành cho nhân viên nhập phiếu tại ao. Manager và
+            admin xử lý duyệt phiếu, lịch sử và tồn kho trên web responsive.
+          </Text>
+
+          <Pressable
+            disabled={isSigningOut}
+            onPress={() => void signOut()}
+            style={[styles.logoutButton, isSigningOut && styles.logoutButtonDisabled]}
+          >
+            <Text style={styles.logoutButtonText}>
+              {isSigningOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   const items = MENU_BY_ROLE[user.role];
 
   return (
@@ -165,5 +196,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff'
+  },
+  webOnlyPanel: {
+    margin: 20,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    padding: 18
+  },
+  webOnlyText: {
+    marginBottom: 18,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4b5563'
+  },
+  webOnlyTitle: {
+    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827'
   }
 });

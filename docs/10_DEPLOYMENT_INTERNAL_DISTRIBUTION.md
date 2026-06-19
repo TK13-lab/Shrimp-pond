@@ -2,7 +2,7 @@
 
 ## Goal
 
-Deploy internally for farm staff.
+Deploy internally for farm staff, manager, and admin.
 
 This does not mean public App Store / Google Play release in Phase 1.
 
@@ -25,7 +25,7 @@ Ubuntu VPS
 Docker Compose
 PostgreSQL
 NestJS API
-Nginx reverse proxy
+Caddy/Nginx reverse proxy
 HTTPS
 ```
 
@@ -39,17 +39,11 @@ Goal:
 Build Android file that can be installed on staff phones.
 ```
 
-### Mobile iOS
+### Manager/Admin Web
 
-iOS is harder for direct file install.
+Serve `apps/web` as a responsive web portal.
 
-For internal testing:
-
-```text
-TestFlight
-```
-
-Do not make iOS the blocking target for week 1 unless necessary.
+Manager and admin should use the web portal for approvals, receipt history, and inventory. Do not make iOS/TestFlight a blocking target unless the web portal later proves insufficient.
 
 ## Local development
 
@@ -71,6 +65,13 @@ npm install
 npx expo start
 ```
 
+Web:
+
+```bash
+cd apps/web
+npm run dev
+```
+
 ## Environment variables
 
 Backend `.env`:
@@ -88,6 +89,8 @@ Mobile `.env` or app config:
 ```text
 EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api
 ```
+
+Web defaults to `http://127.0.0.1:3000/api` locally and to same-domain `/api` in production.
 
 For real phone testing on LAN, use the server or computer LAN IP:
 

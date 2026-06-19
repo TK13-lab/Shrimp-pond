@@ -5,7 +5,8 @@
 Dùng kiến trúc client-server.
 
 ```text
-Mobile app
+Staff mobile app
+Manager/admin web
   ↓
 REST API backend
   ↓
@@ -34,7 +35,7 @@ Backend giúp:
 - Ghi audit log
 - Chống nhập trùng
 - Backup dữ liệu server
-- Mở rộng web dashboard sau này
+- Phục vụ staff mobile app và manager/admin web từ cùng một API
 
 ## Stack được chọn
 
@@ -58,6 +59,18 @@ React Navigation
 expo-secure-store
 REST API client
 ```
+
+Mobile là client cho STAFF nhập phiếu tại ao.
+
+### Web
+
+```text
+Responsive HTML/CSS/JavaScript
+REST API client
+Static hosting behind Caddy/Nginx
+```
+
+Web là client cho MANAGER và ADMIN duyệt phiếu, xem lịch sử và xem tồn kho.
 
 ## Folder structure
 
@@ -86,6 +99,11 @@ shrimp-pond-app/
         auth/
         types/
         utils/
+    web/
+      index.html
+      src/
+        main.js
+        styles.css
   docs/
   AGENTS.md
   README.md
@@ -96,7 +114,7 @@ shrimp-pond-app/
 
 Server là source of truth.
 
-Mobile có thể cache một số dữ liệu để hiển thị nhanh, nhưng Phase 1 chưa cần offline sync.
+Client có thể cache một số dữ liệu để hiển thị nhanh, nhưng Phase 1 chưa cần offline sync.
 
 Nếu mất kết nối mạng:
 
@@ -109,16 +127,16 @@ Nếu mất kết nối mạng:
 Sai:
 
 ```text
-Mobile app -> PostgreSQL
+Mobile app/web -> PostgreSQL
 ```
 
 Đúng:
 
 ```text
-Mobile app -> Backend API -> PostgreSQL
+Mobile app/web -> Backend API -> PostgreSQL
 ```
 
-Mobile không được chứa:
+Client không được chứa:
 
 - Database URL
 - Database password

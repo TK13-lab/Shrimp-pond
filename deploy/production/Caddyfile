@@ -6,3 +6,13 @@
 	encode gzip
 	reverse_proxy api:3000
 }
+
+{$WEB_DOMAIN} {
+	encode gzip
+	root * /srv/web
+
+	@api path /api/*
+	reverse_proxy @api api:3000
+
+	file_server
+}
