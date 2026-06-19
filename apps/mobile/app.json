@@ -25,6 +25,12 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "264b88e8-b6fd-4625-994c-9c9f8d666b3f"
+      }
+    },
+    "owner": "takhoa13"
   }
 }
