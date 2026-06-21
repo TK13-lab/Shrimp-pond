@@ -1,8 +1,8 @@
-# Manager/Admin Web
+# Web Portal
 
-Responsive web portal for `MANAGER` and `ADMIN` users.
+Responsive web portal for `STAFF`, `MANAGER`, and `ADMIN` users.
 
-The staff workflow stays in the Android mobile app. This web app uses the same NestJS REST API and never connects directly to PostgreSQL.
+Staff can log in on web to view their own receipt history. Manager and admin users can review submitted receipts, see inventory, and perform their existing management workflows. This web app uses the same NestJS REST API and never connects directly to PostgreSQL.
 
 ## Run Locally
 
@@ -25,7 +25,7 @@ Local development defaults to:
 http://127.0.0.1:3000/api
 ```
 
-You can change the API URL on the login screen.
+In production, the web portal calls `/api` through the same domain unless `window.SHRIMP_POND_API_BASE_URL` is configured before `src/main.js` loads.
 
 ## Current Screens
 

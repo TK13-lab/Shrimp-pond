@@ -22,7 +22,7 @@ Hoàn thành flow:
 ### Client split
 
 ```text
-STAFF: Android mobile app for receipt entry
+STAFF: Android mobile app for receipt entry; web portal for own receipt history
 MANAGER/ADMIN: responsive web portal for approval, history, and inventory
 ```
 

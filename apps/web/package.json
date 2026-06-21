@@ -2,7 +2,7 @@
   "name": "@shrimp-pond/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Responsive manager and admin web portal for the Shrimp Pond MVP",
+  "description": "Responsive web portal for the Shrimp Pond MVP",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "check": "node --check src/main.js && node --check scripts/serve.mjs"

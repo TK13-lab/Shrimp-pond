@@ -39,11 +39,11 @@ Goal:
 Build Android file that can be installed on staff phones.
 ```
 
-### Manager/Admin Web
+### Web Portal
 
 Serve `apps/web` as a responsive web portal.
 
-Manager and admin should use the web portal for approvals, receipt history, and inventory. Do not make iOS/TestFlight a blocking target unless the web portal later proves insufficient.
+Staff can use the web portal to view their own receipt history. Manager and admin should use the web portal for approvals, receipt history, and inventory. Do not make iOS/TestFlight a blocking target unless the web portal later proves insufficient.
 
 ## Local development
 

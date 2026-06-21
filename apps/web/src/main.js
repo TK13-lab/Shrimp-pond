@@ -3,7 +3,6 @@
 const app = document.querySelector('#app');
 
 const STORAGE_KEYS = {
-  apiBaseUrl: 'shrimp_pond_web_api_base_url',
   session: 'shrimp_pond_web_session'
 };
 
@@ -22,6 +21,8 @@ const ROLE_LABELS = {
   MANAGER: 'Quản lý',
   STAFF: 'Nhân viên'
 };
+
+const WEB_PORTAL_ROLES = ['ADMIN', 'MANAGER', 'STAFF'];
 
 const state = {
   actionLoading: '',
@@ -120,7 +121,7 @@ async function handleAction(action, target) {
   if (action === 'switch-view') {
     const view = target.dataset.view;
 
-    if (view) {
+    if (view && canAccessView(view)) {
       state.activeView = view;
       render();
       await loadActiveView();
@@ -174,7 +175,7 @@ async function handleAction(action, target) {
   if (action === 'approve-receipt') {
     const receiptId = target.dataset.id;
 
-    if (receiptId) {
+    if (receiptId && canReviewReceipts()) {
       await approveReceipt(receiptId);
     }
 
@@ -184,7 +185,7 @@ async function handleAction(action, target) {
   if (action === 'open-reject') {
     const receiptId = target.dataset.id;
 
-    if (receiptId) {
+    if (receiptId && canReviewReceipts()) {
       state.reasonDialog = {
         error: '',
         loading: false,
@@ -200,7 +201,7 @@ async function handleAction(action, target) {
   if (action === 'open-void') {
     const receiptId = target.dataset.id;
 
-    if (receiptId) {
+    if (receiptId && canReviewReceipts()) {
       state.reasonDialog = {
         error: '',
         loading: false,
@@ -226,12 +227,6 @@ async function handleFormSubmit(form) {
   if (formName === 'login') {
     const username = String(formData.get('username') ?? '');
     const password = String(formData.get('password') ?? '');
-    const apiBaseUrl = String(formData.get('apiBaseUrl') ?? '').trim();
-
-    if (apiBaseUrl) {
-      state.apiBaseUrl = normalizeApiBaseUrl(apiBaseUrl);
-      localStorage.setItem(STORAGE_KEYS.apiBaseUrl, state.apiBaseUrl);
-    }
 
     await login(username, password);
     return;
@@ -308,7 +303,7 @@ async function login(username, password) {
 
     state.session = session;
     localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(session));
-    state.activeView = 'approvals';
+    state.activeView = getDefaultActiveView();
     resetLoadedData();
     render();
 
@@ -351,6 +346,8 @@ async function loadActiveView(force = false) {
   if (!canUseWebPortal()) {
     return;
   }
+
+  ensureAccessibleActiveView();
 
   if (state.activeView === 'approvals') {
     await loadApprovals(force);
@@ -810,6 +807,8 @@ function render() {
     return;
   }
 
+  ensureAccessibleActiveView();
+
   app.innerHTML = `
     <div class="app-layout">
       <aside class="sidebar">
@@ -822,9 +821,9 @@ function render() {
         </div>
 
         <nav class="nav-list" aria-label="Điều hướng">
-          ${renderNavButton('approvals', '✓', 'Chờ duyệt', state.approvals.items.length)}
+          ${canReviewReceipts() ? renderNavButton('approvals', '✓', 'Chờ duyệt', state.approvals.items.length) : ''}
           ${renderNavButton('history', '↺', 'Lịch sử', state.history.items.length)}
-          ${renderNavButton('inventory', '▣', 'Tồn kho', state.inventory.items.length)}
+          ${canViewInventory() ? renderNavButton('inventory', '▣', 'Tồn kho', state.inventory.items.length) : ''}
           ${isAdmin() ? renderNavButton('users', '+', 'Người dùng', state.users.items.length) : ''}
         </nav>
 
@@ -854,7 +853,7 @@ function renderLogin() {
           <div class="brand-mark" aria-hidden="true">SP</div>
           <div>
             <h1>Shrimp Pond</h1>
-            <p>Manager / Admin Web</p>
+            <p>Web Portal</p>
           </div>
         </div>
 
@@ -867,11 +866,6 @@ function renderLogin() {
           <label>
             Mật khẩu
             <input autocomplete="current-password" name="password" required type="password" />
-          </label>
-
-          <label>
-            API URL
-            <input name="apiBaseUrl" required value="${escapeHtml(state.apiBaseUrl)}" />
           </label>
 
           ${state.login.error ? `<div class="notice notice-error">${escapeHtml(state.login.error)}</div>` : ''}
@@ -898,7 +892,7 @@ function renderUnsupportedRole() {
         </div>
 
         <div class="notice notice-warning">
-          Tài khoản STAFF dùng app Android để nhập phiếu. Web này chỉ dành cho MANAGER và ADMIN.
+          Vai trò tài khoản này chưa được hỗ trợ trên web.
         </div>
 
         <button class="button button-primary full-width" type="button" data-action="logout">
@@ -926,7 +920,7 @@ function renderActiveView() {
     return renderHistoryView();
   }
 
-  if (state.activeView === 'inventory') {
+  if (state.activeView === 'inventory' && canViewInventory()) {
     return renderInventoryView();
   }
 
@@ -1427,6 +1421,10 @@ function renderReceiptReasons(receipt) {
 }
 
 function renderReceiptActions(receipt) {
+  if (!canReviewReceipts()) {
+    return '';
+  }
+
   const isBusy = state.actionLoading !== '';
 
   if (receipt.status === 'SUBMITTED') {
@@ -1506,13 +1504,51 @@ function renderStatusBadge(status) {
 
 function canUseWebPortal() {
   return Boolean(
-    state.session &&
-      (state.session.user.role === 'ADMIN' || state.session.user.role === 'MANAGER')
+    state.session && WEB_PORTAL_ROLES.includes(state.session.user.role)
   );
+}
+
+function canReviewReceipts() {
+  const role = state.session?.user.role;
+  return role === 'ADMIN' || role === 'MANAGER';
+}
+
+function canViewInventory() {
+  return canReviewReceipts();
 }
 
 function isAdmin() {
   return state.session?.user.role === 'ADMIN';
+}
+
+function getDefaultActiveView() {
+  return canReviewReceipts() ? 'approvals' : 'history';
+}
+
+function ensureAccessibleActiveView() {
+  if (!canAccessView(state.activeView)) {
+    state.activeView = getDefaultActiveView();
+  }
+}
+
+function canAccessView(view) {
+  if (view === 'approvals') {
+    return canReviewReceipts();
+  }
+
+  if (view === 'history') {
+    return canUseWebPortal();
+  }
+
+  if (view === 'inventory') {
+    return canViewInventory();
+  }
+
+  if (view === 'users') {
+    return isAdmin();
+  }
+
+  return false;
 }
 
 function resetLoadedData() {
@@ -1545,12 +1581,6 @@ function getInitialApiBaseUrl() {
 
   if (configuredValue) {
     return normalizeApiBaseUrl(configuredValue);
-  }
-
-  const storedValue = localStorage.getItem(STORAGE_KEYS.apiBaseUrl);
-
-  if (storedValue) {
-    return normalizeApiBaseUrl(storedValue);
   }
 
   if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {

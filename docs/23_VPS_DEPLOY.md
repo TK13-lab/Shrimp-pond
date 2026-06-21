@@ -41,7 +41,7 @@ Expected response:
 {"service":"shrimp-pond-api","status":"ok"}
 ```
 
-Open the manager/admin web portal:
+Open the web portal:
 
 ```text
 https://example.com
@@ -81,7 +81,7 @@ EXPO_PUBLIC_API_BASE_URL=https://example.com/api
 
 Phones on any Wi-Fi or mobile data network can use the app as long as the domain is reachable.
 
-## Manager/Admin Web
+## Web Portal
 
 The Caddy service mounts `apps/web` as static files. Updates to web files are deployed with:
 
