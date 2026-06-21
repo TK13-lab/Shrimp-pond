@@ -475,6 +475,37 @@ tr:last-child td {
   color: #9a3412;
 }
 
+.notice-success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.user-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.form-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.form-panel h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.user-actions {
+  white-space: nowrap;
+}
+
 .drawer-backdrop,
 .modal-backdrop {
   position: fixed;
@@ -590,7 +621,7 @@ dd {
 
   .nav-list {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   }
 
   .nav-button {
@@ -639,6 +670,10 @@ dd {
 
   .table-shell {
     display: none;
+  }
+
+  .user-admin-grid {
+    grid-template-columns: 1fr;
   }
 
   .mobile-list {

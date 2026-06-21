@@ -353,9 +353,16 @@ GET /users
 POST /users
 PATCH /users/:id
 PATCH /users/:id/disable
+PATCH /users/:id/password
 ```
 
 Admin creates:
 
 - 1 manager
 - 4 staff
+
+Notes:
+
+- No public self-registration in the staff APK.
+- Admin sets an initial password or resets a password from web.
+- Passwords are hashed before storage.

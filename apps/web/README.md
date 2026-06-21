@@ -35,6 +35,8 @@ You can change the API URL on the login screen.
 - approve/reject submitted receipts
 - void approved receipts
 - inventory balance search
+- admin-only user creation
+- admin-only user disable and password reset
 
 ## Production
 

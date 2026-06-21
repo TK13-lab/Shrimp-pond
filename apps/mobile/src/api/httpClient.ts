@@ -51,6 +51,10 @@ export function setUnauthorizedRecoveryHandler(
   unauthorizedRecoveryHandler = handler;
 }
 
+export function getConfiguredApiBaseUrl(): string {
+  return getApiBaseUrl();
+}
+
 export async function requestJson<T>(
   path: string,
   options: RequestOptions = {}

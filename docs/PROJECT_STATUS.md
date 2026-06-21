@@ -95,6 +95,10 @@ Date: 2026-06-19
 - The mobile menu now treats MANAGER and ADMIN as web-only users, while preserving STAFF receipt-entry flows in the Android app.
 - Production deployment now supports `WEB_DOMAIN` in Caddy, serves `apps/web` as static files, and reverse proxies `/api/*` to the NestJS API for same-domain web calls.
 - CI now includes a Manager/Admin Web job that runs the web JavaScript syntax check.
+- Admin-only user management is implemented with `GET /api/users`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/disable`, and `PATCH /api/users/:id/password`.
+- The web portal now has an admin-only `Người dùng` screen for creating accounts with initial passwords, filtering users, disabling accounts, and resetting passwords.
+- User management writes audit logs for create/update/disable/password reset actions, hashes passwords with bcrypt, and revokes refresh tokens when a user is disabled or their password is reset.
+- The staff mobile login screen now displays the configured API URL so installed APK connection problems can be diagnosed quickly.
 
 ## Understood Scope
 
@@ -121,9 +125,9 @@ Out of scope for Phase 1:
 
 Continue from Sprint 6 in `docs/11_SPRINT_TASKS_FOR_CODEX.md`:
 
-1. Run the scripted demo with staff on Android and manager/admin on the web portal against a LAN/deployed backend.
-2. Add a dedicated web audit-log screen if in-app audit inspection becomes a release requirement.
-3. Add admin user/farm/material management screens to the web portal after the approval/history flow is stable.
+1. Rebuild the staff APK with a LAN or deployed HTTPS `EXPO_PUBLIC_API_BASE_URL`; do not use `127.0.0.1` for installed phones.
+2. Run the scripted demo with staff on Android and manager/admin on the web portal against a LAN/deployed backend.
+3. Add a dedicated web audit-log screen if in-app audit inspection becomes a release requirement.
 
 ## Notes
 

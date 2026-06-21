@@ -226,3 +226,39 @@ Manager/admin can view audit evidence through protected backend access.
 Staff cannot view audit log.
 Backend returns 403 for staff.
 ```
+
+## Test 13 - Admin creates staff account
+
+### Steps
+
+1. Open manager/admin web portal.
+2. Login as `admin`.
+3. Open `Người dùng`.
+4. Create a new STAFF account with an initial password.
+5. Open the staff APK.
+6. Login with the new account.
+
+### Expected
+
+```text
+Admin can create the account.
+Password is not stored in plain text.
+New staff can log in from APK if the API URL is reachable.
+CREATE_USER audit log is written.
+```
+
+## Test 14 - APK API URL diagnosis
+
+### Steps
+
+1. Open the installed APK.
+2. Check the API URL shown on the login screen.
+3. Try to login while backend is unreachable.
+
+### Expected
+
+```text
+Login screen shows the configured API URL.
+If the URL is 127.0.0.1 on a physical phone, login fails because the phone cannot reach the server.
+Rebuilding the APK with a LAN or HTTPS API URL fixes the connection path.
+```

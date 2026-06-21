@@ -58,7 +58,18 @@ const state = {
     loading: false
   },
   reasonDialog: null,
-  session: readStoredSession()
+  session: readStoredSession(),
+  users: {
+    error: '',
+    filters: {
+      active: '',
+      role: '',
+      search: ''
+    },
+    items: [],
+    loading: false,
+    message: ''
+  }
 };
 
 if (!app) {
@@ -120,6 +131,26 @@ async function handleAction(action, target) {
 
   if (action === 'refresh') {
     await loadActiveView(true);
+    return;
+  }
+
+  if (action === 'disable-user') {
+    const userId = target.dataset.id;
+
+    if (userId) {
+      await disableUser(userId);
+    }
+
+    return;
+  }
+
+  if (action === 'reset-user-password') {
+    const userId = target.dataset.id;
+
+    if (userId) {
+      await resetUserPassword(userId);
+    }
+
     return;
   }
 
@@ -222,6 +253,21 @@ async function handleFormSubmit(form) {
     return;
   }
 
+  if (formName === 'user-filters') {
+    state.users.filters = {
+      active: String(formData.get('active') ?? ''),
+      role: String(formData.get('role') ?? ''),
+      search: String(formData.get('search') ?? '')
+    };
+    await loadUsers(true);
+    return;
+  }
+
+  if (formName === 'create-user') {
+    await createUser(formData);
+    return;
+  }
+
   if (formName === 'reason') {
     const reason = String(formData.get('reason') ?? '').trim();
 
@@ -318,6 +364,11 @@ async function loadActiveView(force = false) {
 
   if (state.activeView === 'inventory') {
     await loadInventory(force);
+    return;
+  }
+
+  if (state.activeView === 'users') {
+    await loadUsers(force);
   }
 }
 
@@ -412,6 +463,48 @@ async function loadInventory(force = false) {
     state.inventory.error = getErrorMessage(error);
   } finally {
     state.inventory.loading = false;
+    render();
+  }
+}
+
+async function loadUsers(force = false) {
+  if (!isAdmin()) {
+    return;
+  }
+
+  if (!force && state.users.items.length > 0) {
+    return;
+  }
+
+  state.users.loading = true;
+  state.users.error = '';
+  render();
+
+  try {
+    const query = new URLSearchParams();
+    const { filters } = state.users;
+
+    if (filters.search.trim()) {
+      query.set('search', filters.search.trim());
+    }
+
+    if (filters.role) {
+      query.set('role', filters.role);
+    }
+
+    if (filters.active) {
+      query.set('active', filters.active);
+    }
+
+    const suffix = query.toString();
+    const response = await requestJson(suffix ? `/users?${suffix}` : '/users', {
+      auth: true
+    });
+    state.users.items = response.items ?? [];
+  } catch (error) {
+    state.users.error = getErrorMessage(error);
+  } finally {
+    state.users.loading = false;
     render();
   }
 }
@@ -514,6 +607,115 @@ async function voidReceipt(receiptId, reason) {
     if (state.reasonDialog) {
       state.reasonDialog.loading = false;
     }
+    render();
+  }
+}
+
+async function createUser(formData) {
+  if (!isAdmin()) {
+    return;
+  }
+
+  const password = String(formData.get('password') ?? '');
+
+  if (password.length < 8) {
+    state.users.error = 'Mật khẩu phải có ít nhất 8 ký tự.';
+    render();
+    return;
+  }
+
+  state.users.loading = true;
+  state.users.error = '';
+  state.users.message = '';
+  render();
+
+  try {
+    await requestJson('/users', {
+      auth: true,
+      body: {
+        fullName: String(formData.get('fullName') ?? ''),
+        username: String(formData.get('username') ?? ''),
+        phone: String(formData.get('phone') ?? ''),
+        role: String(formData.get('role') ?? 'STAFF'),
+        password
+      },
+      method: 'POST'
+    });
+    state.users.message = 'Đã tạo tài khoản. Có thể dùng tài khoản này để đăng nhập ngay.';
+    await loadUsers(true);
+  } catch (error) {
+    state.users.error = getErrorMessage(error);
+  } finally {
+    state.users.loading = false;
+    render();
+  }
+}
+
+async function disableUser(userId) {
+  if (!isAdmin()) {
+    return;
+  }
+
+  if (!window.confirm('Khóa tài khoản này? Người dùng sẽ không đăng nhập được nữa.')) {
+    return;
+  }
+
+  state.users.loading = true;
+  state.users.error = '';
+  state.users.message = '';
+  render();
+
+  try {
+    await requestJson(`/users/${userId}/disable`, {
+      auth: true,
+      method: 'PATCH'
+    });
+    state.users.message = 'Đã khóa tài khoản.';
+    await loadUsers(true);
+  } catch (error) {
+    state.users.error = getErrorMessage(error);
+  } finally {
+    state.users.loading = false;
+    render();
+  }
+}
+
+async function resetUserPassword(userId) {
+  if (!isAdmin()) {
+    return;
+  }
+
+  const password = window.prompt('Nhập mật khẩu mới, tối thiểu 8 ký tự');
+
+  if (password === null) {
+    return;
+  }
+
+  if (password.length < 8) {
+    state.users.error = 'Mật khẩu mới phải có ít nhất 8 ký tự.';
+    render();
+    return;
+  }
+
+  state.users.loading = true;
+  state.users.error = '';
+  state.users.message = '';
+  render();
+
+  try {
+    await requestJson(`/users/${userId}/password`, {
+      auth: true,
+      body: {
+        password
+      },
+      method: 'PATCH'
+    });
+    state.users.message = 'Đã đặt lại mật khẩu. Người dùng cần đăng nhập lại.';
+    await loadUsers(true);
+  } catch (error) {
+    state.users.error = getErrorMessage(error);
+  } finally {
+    state.users.loading = false;
     render();
   }
 }
@@ -623,6 +825,7 @@ function render() {
           ${renderNavButton('approvals', '✓', 'Chờ duyệt', state.approvals.items.length)}
           ${renderNavButton('history', '↺', 'Lịch sử', state.history.items.length)}
           ${renderNavButton('inventory', '▣', 'Tồn kho', state.inventory.items.length)}
+          ${isAdmin() ? renderNavButton('users', '+', 'Người dùng', state.users.items.length) : ''}
         </nav>
 
         <div class="account-box">
@@ -727,6 +930,10 @@ function renderActiveView() {
     return renderInventoryView();
   }
 
+  if (state.activeView === 'users' && isAdmin()) {
+    return renderUsersView();
+  }
+
   return renderApprovalsView();
 }
 
@@ -823,6 +1030,84 @@ function renderInventoryView() {
 
     ${renderLoadingOrError(state.inventory.loading, state.inventory.error)}
     ${renderInventoryCollection()}
+  `;
+}
+
+function renderUsersView() {
+  const { filters } = state.users;
+
+  return `
+    <section class="view-header">
+      <div>
+        <p class="eyebrow">Quản trị</p>
+        <h2>Người dùng</h2>
+      </div>
+      <button class="icon-button" title="Tải lại" type="button" data-action="refresh">↻</button>
+    </section>
+
+    <section class="user-admin-grid">
+      <form class="form-panel" data-form="create-user">
+        <h3>Tạo tài khoản</h3>
+        <label>
+          Họ tên
+          <input name="fullName" required />
+        </label>
+        <label>
+          Tên đăng nhập
+          <input autocomplete="off" name="username" required />
+        </label>
+        <label>
+          Số điện thoại
+          <input name="phone" />
+        </label>
+        <label>
+          Vai trò
+          <select name="role" required>
+            <option value="STAFF">Nhân viên</option>
+            <option value="MANAGER">Quản lý</option>
+            <option value="ADMIN">Quản trị viên</option>
+          </select>
+        </label>
+        <label>
+          Mật khẩu ban đầu
+          <input autocomplete="new-password" minlength="8" name="password" required type="password" />
+        </label>
+        <button class="button button-primary" ${state.users.loading ? 'disabled' : ''} type="submit">
+          Tạo tài khoản
+        </button>
+      </form>
+
+      <section>
+        <form class="filter-bar" data-form="user-filters">
+          <label class="grow">
+            Tìm
+            <input name="search" value="${escapeHtml(filters.search)}" />
+          </label>
+          <label>
+            Vai trò
+            <select name="role">
+              <option value="" ${filters.role === '' ? 'selected' : ''}>Tất cả</option>
+              <option value="ADMIN" ${filters.role === 'ADMIN' ? 'selected' : ''}>Admin</option>
+              <option value="MANAGER" ${filters.role === 'MANAGER' ? 'selected' : ''}>Manager</option>
+              <option value="STAFF" ${filters.role === 'STAFF' ? 'selected' : ''}>Staff</option>
+            </select>
+          </label>
+          <label>
+            Trạng thái
+            <select name="active">
+              <option value="" ${filters.active === '' ? 'selected' : ''}>Tất cả</option>
+              <option value="true" ${filters.active === 'true' ? 'selected' : ''}>Đang dùng</option>
+              <option value="false" ${filters.active === 'false' ? 'selected' : ''}>Đã khóa</option>
+            </select>
+          </label>
+          <button class="button button-secondary" type="submit">Lọc</button>
+        </form>
+
+        ${state.users.message ? `<div class="notice notice-success">${escapeHtml(state.users.message)}</div>` : ''}
+        ${renderLoadingOrError(state.users.loading, state.users.error)}
+        ${renderUsersCollection()}
+      </section>
+    </section>
   `;
 }
 
@@ -972,6 +1257,71 @@ function renderInventoryCollection() {
         )
         .join('')}
     </section>
+  `;
+}
+
+function renderUsersCollection() {
+  if (!state.users.items.length) {
+    return '<div class="empty-state">Chưa có tài khoản phù hợp.</div>';
+  }
+
+  return `
+    <section class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>Tài khoản</th>
+            <th>Họ tên</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${state.users.items.map(renderUserRow).join('')}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="mobile-list">
+      ${state.users.items.map(renderUserListItem).join('')}
+    </section>
+  `;
+}
+
+function renderUserRow(user) {
+  return `
+    <tr>
+      <td><strong>@${escapeHtml(user.username)}</strong></td>
+      <td>${escapeHtml(user.fullName)}${user.phone ? `<br /><small>${escapeHtml(user.phone)}</small>` : ''}</td>
+      <td>${escapeHtml(ROLE_LABELS[user.role] ?? user.role)}</td>
+      <td>${user.isActive ? '<span class="status status-approved">Đang dùng</span>' : '<span class="status status-voided">Đã khóa</span>'}</td>
+      <td class="align-right user-actions">
+        <button class="button button-small" type="button" data-action="reset-user-password" data-id="${escapeHtml(user.id)}">
+          Đặt mật khẩu
+        </button>
+        <button class="button button-danger button-small" ${user.isActive ? '' : 'disabled'} type="button" data-action="disable-user" data-id="${escapeHtml(user.id)}">
+          Khóa
+        </button>
+      </td>
+    </tr>
+  `;
+}
+
+function renderUserListItem(user) {
+  return `
+    <div class="mobile-row inventory-row">
+      <span>
+        <strong>@${escapeHtml(user.username)}</strong>
+        <small>${escapeHtml(user.fullName)} · ${escapeHtml(ROLE_LABELS[user.role] ?? user.role)}</small>
+      </span>
+      <span>
+        ${user.isActive ? '<span class="status status-approved">Đang dùng</span>' : '<span class="status status-voided">Đã khóa</span>'}
+        <button class="button button-small" type="button" data-action="reset-user-password" data-id="${escapeHtml(user.id)}">
+          Mật khẩu
+        </button>
+      </span>
+    </div>
   `;
 }
 
@@ -1161,10 +1511,15 @@ function canUseWebPortal() {
   );
 }
 
+function isAdmin() {
+  return state.session?.user.role === 'ADMIN';
+}
+
 function resetLoadedData() {
   state.approvals.items = [];
   state.history.items = [];
   state.inventory.items = [];
+  state.users.items = [];
   state.detail.receipt = null;
 }
 

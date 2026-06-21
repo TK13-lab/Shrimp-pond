@@ -60,6 +60,13 @@ Use this file to mark completed tasks and reduce confusion between planning and 
 - [x] S6-T4 Implement receipt history and detail actions
 - [x] S6-T5 Implement inventory view and VPS static web deploy config
 
+## Sprint 7 - Account setup and APK connection clarity
+
+- [x] S7-T1 Add admin-only user management API
+- [x] S7-T2 Add admin web user creation, disable, and password reset
+- [x] S7-T3 Show APK API URL on staff login screen
+- [x] S7-T4 Document real backend URL requirement for installed APKs
+
 ## Notes
 
 - After each completed and verified task, update this checklist.

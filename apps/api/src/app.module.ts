@@ -7,6 +7,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { MaterialsModule } from './materials/materials.module';
 import { PurchaseReceiptsModule } from './purchase-receipts/purchase-receipts.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     PrismaModule,
     AuthModule,
+    UsersModule,
     InventoryModule,
     MaterialsModule,
     PurchaseReceiptsModule,

@@ -81,6 +81,14 @@ After that, GitHub Actions can trigger preview builds non-interactively.
 
 If the app opens but cannot log in, check the API URL first. A phone cannot use `127.0.0.1` to reach the backend on your computer or server.
 
+The APK login screen displays the API URL it was built with. For a real install, it should be a LAN IP reachable from the phone or a deployed HTTPS API URL, for example:
+
+```text
+https://api.your-domain.com/api
+```
+
+If the screen still shows `http://127.0.0.1:3000/api`, rebuild the APK after setting `EXPO_PUBLIC_API_BASE_URL`.
+
 ## Recommended product path
 
 Keep React Native Expo as the staff app for farm-side receipt entry.

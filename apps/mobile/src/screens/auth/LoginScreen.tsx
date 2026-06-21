@@ -11,15 +11,23 @@ import {
 } from 'react-native';
 
 import { useAuth } from '../../auth/useAuth';
+import { getConfiguredApiBaseUrl } from '../../api/httpClient';
 import { getRequestErrorMessage } from '../../utils/requestErrors';
 
-const DEMO_ACCOUNTS = ['admin / Admin@123', 'manager1 / Manager@123', 'staff1 / Staff@123'];
+const DEMO_ACCOUNTS = ['staff1 / Staff@123', 'staff2 / Staff@123'];
 
 export function LoginScreen() {
   const { isSigningIn, signIn } = useAuth();
   const [username, setUsername] = useState('staff1');
   const [password, setPassword] = useState('Staff@123');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const apiBaseUrl = useMemo(() => {
+    try {
+      return getConfiguredApiBaseUrl();
+    } catch {
+      return 'Chưa cấu hình';
+    }
+  }, []);
 
   const isSubmitDisabled = useMemo(() => {
     return (
@@ -100,7 +108,14 @@ export function LoginScreen() {
         </Pressable>
 
         <View style={styles.demoPanel}>
-          <Text style={styles.demoTitle}>Tài khoản demo</Text>
+          <Text style={styles.demoTitle}>Máy chủ API</Text>
+          <Text style={styles.serverUrl}>{apiBaseUrl}</Text>
+          <Text style={styles.serverHint}>
+            Nếu điện thoại báo không thể kết nối, hãy kiểm tra APK có được build
+            với API URL thật mà điện thoại truy cập được.
+          </Text>
+
+          <Text style={styles.demoTitle}>Tài khoản staff demo</Text>
           {DEMO_ACCOUNTS.map((account) => (
             <Text key={account} style={styles.demoItem}>
               {account}
@@ -199,6 +214,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#475569'
+  },
+  serverHint: {
+    marginBottom: 14,
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#64748b'
+  },
+  serverUrl: {
+    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0f766e'
   },
   demoItem: {
     marginBottom: 4,

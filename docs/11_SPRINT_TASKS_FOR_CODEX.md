@@ -561,3 +561,72 @@ Inventory can be viewed from web
 Staff mobile app remains usable for receipt entry
 No secrets are hard-coded
 ```
+
+---
+
+## Sprint 7 - Account setup and APK connection clarity
+
+Duration: 1-2 days
+
+### Goal
+
+Admin can create real staff/manager/admin accounts from web, and installed APK users can clearly see which API server the app is trying to reach.
+
+### Tasks
+
+#### S7-T1 - Admin user API
+
+Implement:
+
+```text
+GET /users
+POST /users
+PATCH /users/:id
+PATCH /users/:id/disable
+PATCH /users/:id/password
+```
+
+Rules:
+
+```text
+Only ADMIN can manage users
+No public self-registration
+New staff/manager accounts must belong to an active farm
+Password hashes are stored, never plain passwords
+Important account actions write audit logs
+Disabling a user revokes refresh tokens
+```
+
+#### S7-T2 - Web user management
+
+Implement:
+
+```text
+Admin-only Người dùng screen
+Create account with initial password
+List users
+Disable user
+Reset password
+```
+
+#### S7-T3 - APK connection clarity
+
+Implement:
+
+```text
+Staff login screen displays configured API URL
+Login copy explains that APK must be built with a reachable API URL
+```
+
+### Definition of Done
+
+```text
+Admin can create a staff account from web
+Created staff can log in from APK when API URL is reachable
+Admin can reset password
+Admin can disable user
+Disabled user cannot keep using refresh tokens
+TypeScript compiles
+Backend smoke bootstrap passes
+No secrets are hard-coded
+```

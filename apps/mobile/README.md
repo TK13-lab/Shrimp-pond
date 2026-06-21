@@ -27,6 +27,8 @@ Examples:
 
 Development still falls back to `http://127.0.0.1:3000/api` when the env var is missing. Internal APK builds do not use that fallback and will show a clear configuration error instead.
 
+The login screen shows the API URL compiled into the app. If an installed APK says it cannot connect to the server, first confirm that this URL is reachable from the phone. `127.0.0.1` only points to the phone itself and will not reach your computer or VPS.
+
 ## Useful commands
 
 ```bash
