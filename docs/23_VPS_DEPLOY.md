@@ -19,7 +19,9 @@ cd Shrimp-pond/deploy/production
 cp .env.example .env
 ```
 
-Edit `.env` with the real domains, email, database password, and JWT secret.
+Edit `.env` with the real domain, email, database password, and JWT secret.
+Use URL-safe values for `POSTGRES_PASSWORD` because it is embedded into
+`DATABASE_URL`; for example, generate it with `openssl rand -hex 24`.
 
 Start the stack:
 
