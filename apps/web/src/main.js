@@ -23,6 +23,7 @@ const ROLE_LABELS = {
 };
 
 const WEB_PORTAL_ROLES = ['ADMIN', 'MANAGER', 'STAFF'];
+const RECEIPT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const state = {
   actionLoading: '',
@@ -58,7 +59,14 @@ const state = {
     error: '',
     loading: false
   },
+  materials: {
+    error: '',
+    items: [],
+    loading: false,
+    search: ''
+  },
   reasonDialog: null,
+  receiptForm: createInitialReceiptFormState(),
   session: readStoredSession(),
   users: {
     error: '',
@@ -103,7 +111,10 @@ app.addEventListener('submit', (event) => {
   }
 
   event.preventDefault();
-  void handleFormSubmit(form);
+  void handleFormSubmit(
+    form,
+    event.submitter instanceof HTMLElement ? event.submitter : null
+  );
 });
 
 render();
@@ -132,6 +143,47 @@ async function handleAction(action, target) {
 
   if (action === 'refresh') {
     await loadActiveView(true);
+    return;
+  }
+
+  if (action === 'add-receipt-row') {
+    addReceiptRow();
+    return;
+  }
+
+  if (action === 'add-material-row') {
+    const materialId = target.dataset.id;
+
+    if (materialId) {
+      addMaterialReceiptRow(materialId);
+    }
+
+    return;
+  }
+
+  if (action === 'remove-receipt-row') {
+    const rowId = target.dataset.id;
+
+    if (rowId) {
+      removeReceiptRow(rowId);
+    }
+
+    return;
+  }
+
+  if (action === 'reset-receipt-form') {
+    resetReceiptForm();
+    render();
+    return;
+  }
+
+  if (action === 'submit-draft-receipt') {
+    const receiptId = target.dataset.id;
+
+    if (receiptId && canCreateReceipts()) {
+      await submitDraftReceipt(receiptId);
+    }
+
     return;
   }
 
@@ -220,7 +272,7 @@ async function handleAction(action, target) {
   }
 }
 
-async function handleFormSubmit(form) {
+async function handleFormSubmit(form, submitter = null) {
   const formName = form.dataset.form;
   const formData = new FormData(form);
 
@@ -245,6 +297,17 @@ async function handleFormSubmit(form) {
   if (formName === 'inventory-search') {
     state.inventory.search = String(formData.get('search') ?? '');
     await loadInventory(true);
+    return;
+  }
+
+  if (formName === 'material-search') {
+    state.materials.search = String(formData.get('search') ?? '');
+    await loadMaterials(true);
+    return;
+  }
+
+  if (formName === 'receipt-form') {
+    await saveReceiptForm(formData, submitter?.dataset.intent === 'submit');
     return;
   }
 
@@ -359,6 +422,16 @@ async function loadActiveView(force = false) {
     return;
   }
 
+  if (state.activeView === 'create-receipt') {
+    await loadMaterials(force);
+    return;
+  }
+
+  if (state.activeView === 'materials') {
+    await loadMaterials(force);
+    return;
+  }
+
   if (state.activeView === 'inventory') {
     await loadInventory(force);
     return;
@@ -464,6 +537,42 @@ async function loadInventory(force = false) {
   }
 }
 
+async function loadMaterials(force = false) {
+  if (!force && state.materials.items.length > 0) {
+    return;
+  }
+
+  state.materials.loading = true;
+  state.materials.error = '';
+  render();
+
+  try {
+    const query = new URLSearchParams();
+
+    if (state.materials.search.trim()) {
+      query.set('search', state.materials.search.trim());
+    }
+
+    if (!isAdmin()) {
+      query.set('active', 'true');
+    }
+
+    const suffix = query.toString();
+    const response = await requestJson(
+      suffix ? `/materials?${suffix}` : '/materials',
+      {
+        auth: true
+      }
+    );
+    state.materials.items = response.items ?? [];
+  } catch (error) {
+    state.materials.error = getErrorMessage(error);
+  } finally {
+    state.materials.loading = false;
+    render();
+  }
+}
+
 async function loadUsers(force = false) {
   if (!isAdmin()) {
     return;
@@ -502,6 +611,92 @@ async function loadUsers(force = false) {
     state.users.error = getErrorMessage(error);
   } finally {
     state.users.loading = false;
+    render();
+  }
+}
+
+async function saveReceiptForm(formData, shouldSubmit) {
+  if (!canCreateReceipts()) {
+    return;
+  }
+
+  state.receiptForm.error = '';
+  state.receiptForm.message = '';
+  syncReceiptFormFromFormData(formData);
+
+  const validationMessage = validateReceiptForm();
+
+  if (validationMessage) {
+    state.receiptForm.error = validationMessage;
+    render();
+    return;
+  }
+
+  state.receiptForm.loading = shouldSubmit ? 'submit' : 'save';
+  render();
+
+  try {
+    const payload = buildReceiptPayload();
+    const currentSignature = createReceiptFormSignature();
+    const draftReceipt =
+      shouldSubmit &&
+      state.receiptForm.savedDraft?.status === 'DRAFT' &&
+      state.receiptForm.savedSignature === currentSignature
+        ? state.receiptForm.savedDraft
+        : await requestJson('/purchase-receipts', {
+            auth: true,
+            body: payload,
+            headers: {
+              'X-Idempotency-Key': payload.clientRequestId
+            },
+            method: 'POST'
+          });
+
+    if (shouldSubmit) {
+      const submittedReceipt = await requestJson(
+        `/purchase-receipts/${draftReceipt.id}/submit`,
+        {
+          auth: true,
+          method: 'PATCH'
+        }
+      );
+      state.receiptForm.message = `Đã gửi duyệt phiếu ${submittedReceipt.receiptCode}.`;
+      state.receiptForm = {
+        ...createInitialReceiptFormState(),
+        message: state.receiptForm.message
+      };
+      await reloadReceiptLists();
+      return;
+    }
+
+    state.receiptForm.savedDraft = draftReceipt;
+    state.receiptForm.savedSignature = currentSignature;
+    state.receiptForm.message = `Đã lưu nháp ${draftReceipt.receiptCode}.`;
+    state.receiptForm.clientRequestId = createUuid();
+    await reloadReceiptLists();
+  } catch (error) {
+    state.receiptForm.error = getErrorMessage(error);
+  } finally {
+    state.receiptForm.loading = '';
+    render();
+  }
+}
+
+async function submitDraftReceipt(receiptId) {
+  state.actionLoading = `submit:${receiptId}`;
+  render();
+
+  try {
+    const receipt = await requestJson(`/purchase-receipts/${receiptId}/submit`, {
+      auth: true,
+      method: 'PATCH'
+    });
+    state.detail.receipt = receipt;
+    await reloadReceiptLists();
+  } catch (error) {
+    state.detail.error = getErrorMessage(error);
+  } finally {
+    state.actionLoading = '';
     render();
   }
 }
@@ -822,7 +1017,9 @@ function render() {
 
         <nav class="nav-list" aria-label="Điều hướng">
           ${canReviewReceipts() ? renderNavButton('approvals', '✓', 'Chờ duyệt', state.approvals.items.length) : ''}
+          ${canCreateReceipts() ? renderNavButton('create-receipt', '+', 'Tạo phiếu', '') : ''}
           ${renderNavButton('history', '↺', 'Lịch sử', state.history.items.length)}
+          ${renderNavButton('materials', '▤', 'Vật tư', state.materials.items.length)}
           ${canViewInventory() ? renderNavButton('inventory', '▣', 'Tồn kho', state.inventory.items.length) : ''}
           ${isAdmin() ? renderNavButton('users', '+', 'Người dùng', state.users.items.length) : ''}
         </nav>
@@ -905,19 +1102,30 @@ function renderUnsupportedRole() {
 
 function renderNavButton(view, icon, label, count) {
   const isActive = state.activeView === view;
+  const countMarkup = count === ''
+    ? '<span class="nav-count nav-count-empty" aria-hidden="true"></span>'
+    : `<span class="nav-count">${count}</span>`;
 
   return `
     <button class="nav-button ${isActive ? 'is-active' : ''}" type="button" data-action="switch-view" data-view="${escapeHtml(view)}">
       <span class="nav-icon" aria-hidden="true">${escapeHtml(icon)}</span>
       <span>${escapeHtml(label)}</span>
-      <span class="nav-count">${count}</span>
+      ${countMarkup}
     </button>
   `;
 }
 
 function renderActiveView() {
+  if (state.activeView === 'create-receipt' && canCreateReceipts()) {
+    return renderCreateReceiptView();
+  }
+
   if (state.activeView === 'history') {
     return renderHistoryView();
+  }
+
+  if (state.activeView === 'materials') {
+    return renderMaterialsView();
   }
 
   if (state.activeView === 'inventory' && canViewInventory()) {
@@ -929,6 +1137,145 @@ function renderActiveView() {
   }
 
   return renderApprovalsView();
+}
+
+function renderCreateReceiptView() {
+  const form = state.receiptForm;
+  const totalAmount = computeReceiptFormTotal();
+  const isBusy = form.loading !== '';
+
+  return `
+    <section class="view-header">
+      <div>
+        <p class="eyebrow">Phiếu nhập</p>
+        <h2>Tạo phiếu</h2>
+      </div>
+      <button class="icon-button" title="Tải lại vật tư" type="button" data-action="refresh">↻</button>
+    </section>
+
+    ${renderLoadingOrError(state.materials.loading, state.materials.error)}
+
+    <section class="form-panel receipt-form-panel">
+      <form data-form="receipt-form">
+        <div class="form-section">
+          <h3>Thông tin chung</h3>
+          <div class="form-grid">
+            <label>
+              Ngày nhập
+              <input name="receiptDate" required type="date" value="${escapeHtml(form.receiptDate)}" />
+            </label>
+            <label>
+              Nhà cung cấp
+              <input name="supplierName" placeholder="Ví dụ: Đại lý vật tư A" value="${escapeHtml(form.supplierName)}" />
+            </label>
+          </div>
+          <label>
+            Ghi chú
+            <textarea name="note" placeholder="Ghi chú thêm cho phiếu nhập" rows="3">${escapeHtml(form.note)}</textarea>
+          </label>
+        </div>
+
+        <div class="form-section">
+          <div class="section-heading-row">
+            <h3>Thêm nhanh từ vật tư</h3>
+            <button class="button button-small" ${isBusy ? 'disabled' : ''} type="button" data-action="add-receipt-row">
+              Thêm dòng trống
+            </button>
+          </div>
+          ${renderQuickMaterialPicker(isBusy)}
+        </div>
+
+        <div class="form-section">
+          <h3>Danh sách hàng hóa</h3>
+          <section class="receipt-item-list">
+            ${form.items.map((item, index) => renderReceiptFormItem(item, index, isBusy)).join('')}
+          </section>
+        </div>
+
+        <div class="receipt-total-row">
+          <span>Tổng tiền</span>
+          <strong>${escapeHtml(formatMoney(totalAmount))}</strong>
+        </div>
+
+        ${form.message ? `<div class="notice notice-success">${escapeHtml(form.message)}</div>` : ''}
+        ${form.error ? `<div class="notice notice-error">${escapeHtml(form.error)}</div>` : ''}
+
+        <div class="drawer-actions">
+          <button class="button button-ghost" ${isBusy ? 'disabled' : ''} type="button" data-action="reset-receipt-form">
+            Xóa form
+          </button>
+          <button class="button button-secondary" ${isBusy ? 'disabled' : ''} data-intent="save" type="submit">
+            ${form.loading === 'save' ? 'Đang lưu...' : 'Lưu nháp'}
+          </button>
+          <button class="button button-primary" ${isBusy ? 'disabled' : ''} data-intent="submit" type="submit">
+            ${form.loading === 'submit' ? 'Đang gửi...' : 'Gửi duyệt'}
+          </button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderQuickMaterialPicker(isBusy) {
+  const activeMaterials = state.materials.items.filter((material) => material.isActive);
+
+  if (!activeMaterials.length) {
+    return '<div class="empty-state compact">Chưa có vật tư đang dùng. Có thể nhập thủ công từng dòng.</div>';
+  }
+
+  return `
+    <div class="quick-material-list">
+      ${activeMaterials
+        .map(
+          (material) => `
+            <button class="quick-material-chip" ${isBusy ? 'disabled' : ''} type="button" data-action="add-material-row" data-id="${escapeHtml(material.id)}">
+              <strong>${escapeHtml(material.name)}</strong>
+              <span>${escapeHtml(material.defaultUnit)}</span>
+            </button>
+          `
+        )
+        .join('')}
+    </div>
+  `;
+}
+
+function renderReceiptFormItem(item, index, isBusy) {
+  const lineTotal = computeLineTotal(item.quantity, item.unitPrice);
+
+  return `
+    <article class="receipt-item-card">
+      <div class="section-heading-row">
+        <h4>Dòng ${index + 1}</h4>
+        <button class="button button-danger button-small" ${isBusy ? 'disabled' : ''} type="button" data-action="remove-receipt-row" data-id="${escapeHtml(item.id)}">
+          Xóa
+        </button>
+      </div>
+      <input name="itemId" type="hidden" value="${escapeHtml(item.id)}" />
+      <input name="materialId:${escapeHtml(item.id)}" type="hidden" value="${escapeHtml(item.materialId ?? '')}" />
+      <label>
+        Tên hàng hóa
+        <input name="materialName:${escapeHtml(item.id)}" required value="${escapeHtml(item.materialName)}" />
+      </label>
+      <div class="form-grid three-columns">
+        <label>
+          Số lượng
+          <input min="0.001" name="quantity:${escapeHtml(item.id)}" required step="0.001" type="number" value="${escapeHtml(item.quantity)}" />
+        </label>
+        <label>
+          Đơn vị
+          <input name="unit:${escapeHtml(item.id)}" required value="${escapeHtml(item.unit)}" />
+        </label>
+        <label>
+          Giá nhập
+          <input min="0" name="unitPrice:${escapeHtml(item.id)}" required step="0.01" type="number" value="${escapeHtml(item.unitPrice)}" />
+        </label>
+      </div>
+      <div class="line-total-row">
+        <span>Thành tiền</span>
+        <strong>${escapeHtml(formatMoney(lineTotal))}</strong>
+      </div>
+    </article>
+  `;
 }
 
 function renderApprovalsView() {
@@ -991,6 +1338,87 @@ function renderHistoryView() {
 
     ${renderLoadingOrError(state.history.loading, state.history.error)}
     ${renderReceiptCollection(state.history.items, 'Chưa có phiếu phù hợp bộ lọc.')}
+  `;
+}
+
+function renderMaterialsView() {
+  return `
+    <section class="view-header">
+      <div>
+        <p class="eyebrow">Danh mục</p>
+        <h2>Vật tư</h2>
+      </div>
+      <button class="icon-button" title="Tải lại" type="button" data-action="refresh">↻</button>
+    </section>
+
+    <form class="filter-bar" data-form="material-search">
+      <label class="grow">
+        Tìm vật tư
+        <input name="search" value="${escapeHtml(state.materials.search)}" />
+      </label>
+      <button class="button button-secondary" type="submit">Tìm</button>
+    </form>
+
+    ${renderSummaryStrip([
+      ['Số vật tư', String(state.materials.items.length)],
+      ['Đang dùng', String(state.materials.items.filter((item) => item.isActive).length)]
+    ])}
+
+    ${renderLoadingOrError(state.materials.loading, state.materials.error)}
+    ${renderMaterialsCollection()}
+  `;
+}
+
+function renderMaterialsCollection() {
+  if (!state.materials.items.length) {
+    return '<div class="empty-state">Không có vật tư phù hợp.</div>';
+  }
+
+  return `
+    <section class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>Vật tư</th>
+            <th>Đơn vị mặc định</th>
+            <th>Ghi chú</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${state.materials.items
+            .map(
+              (item) => `
+                <tr>
+                  <td><strong>${escapeHtml(item.name)}</strong></td>
+                  <td>${escapeHtml(item.defaultUnit)}</td>
+                  <td>${escapeHtml(item.note?.trim() || '-')}</td>
+                  <td>${item.isActive ? '<span class="status status-approved">Đang dùng</span>' : '<span class="status status-voided">Ngừng dùng</span>'}</td>
+                </tr>
+              `
+            )
+            .join('')}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="mobile-list">
+      ${state.materials.items
+        .map(
+          (item) => `
+            <div class="mobile-row inventory-row">
+              <span>
+                <strong>${escapeHtml(item.name)}</strong>
+                <small>${escapeHtml(item.defaultUnit)} · ${escapeHtml(item.note?.trim() || 'Chưa có ghi chú')}</small>
+              </span>
+              <span>
+                ${item.isActive ? '<span class="status status-approved">Đang dùng</span>' : '<span class="status status-voided">Ngừng dùng</span>'}
+              </span>
+            </div>
+          `
+        )
+        .join('')}
+    </section>
   `;
 }
 
@@ -1421,6 +1849,18 @@ function renderReceiptReasons(receipt) {
 }
 
 function renderReceiptActions(receipt) {
+  if (receipt.status === 'DRAFT' && canCreateReceipts()) {
+    const isSubmitting = state.actionLoading === `submit:${receipt.id}`;
+
+    return `
+      <div class="drawer-actions">
+        <button class="button button-primary" ${state.actionLoading ? 'disabled' : ''} type="button" data-action="submit-draft-receipt" data-id="${escapeHtml(receipt.id)}">
+          ${isSubmitting ? 'Đang gửi...' : 'Gửi duyệt'}
+        </button>
+      </div>
+    `;
+  }
+
   if (!canReviewReceipts()) {
     return '';
   }
@@ -1513,6 +1953,10 @@ function canReviewReceipts() {
   return role === 'ADMIN' || role === 'MANAGER';
 }
 
+function canCreateReceipts() {
+  return canUseWebPortal();
+}
+
 function canViewInventory() {
   return canReviewReceipts();
 }
@@ -1522,7 +1966,7 @@ function isAdmin() {
 }
 
 function getDefaultActiveView() {
-  return canReviewReceipts() ? 'approvals' : 'history';
+  return canReviewReceipts() ? 'approvals' : 'create-receipt';
 }
 
 function ensureAccessibleActiveView() {
@@ -1536,7 +1980,15 @@ function canAccessView(view) {
     return canReviewReceipts();
   }
 
+  if (view === 'create-receipt') {
+    return canCreateReceipts();
+  }
+
   if (view === 'history') {
+    return canUseWebPortal();
+  }
+
+  if (view === 'materials') {
     return canUseWebPortal();
   }
 
@@ -1555,8 +2007,198 @@ function resetLoadedData() {
   state.approvals.items = [];
   state.history.items = [];
   state.inventory.items = [];
+  state.materials.items = [];
   state.users.items = [];
   state.detail.receipt = null;
+}
+
+function createInitialReceiptFormState() {
+  return {
+    clientRequestId: createUuid(),
+    error: '',
+    items: [createEmptyReceiptItem()],
+    loading: '',
+    message: '',
+    note: '',
+    receiptDate: createTodayInputValue(),
+    savedDraft: null,
+    savedSignature: '',
+    supplierName: ''
+  };
+}
+
+function createEmptyReceiptItem() {
+  return {
+    id: createUuid(),
+    materialId: '',
+    materialName: '',
+    quantity: '',
+    unit: '',
+    unitPrice: ''
+  };
+}
+
+function addReceiptRow() {
+  state.receiptForm.items.push(createEmptyReceiptItem());
+  state.receiptForm.error = '';
+  state.receiptForm.message = '';
+  render();
+}
+
+function addMaterialReceiptRow(materialId) {
+  const material = state.materials.items.find((item) => item.id === materialId);
+
+  if (!material) {
+    return;
+  }
+
+  state.receiptForm.items.push({
+    id: createUuid(),
+    materialId: material.id,
+    materialName: material.name,
+    quantity: '',
+    unit: material.defaultUnit,
+    unitPrice: ''
+  });
+  state.receiptForm.error = '';
+  state.receiptForm.message = '';
+  render();
+}
+
+function removeReceiptRow(rowId) {
+  const nextItems = state.receiptForm.items.filter((item) => item.id !== rowId);
+  state.receiptForm.items = nextItems.length > 0 ? nextItems : [createEmptyReceiptItem()];
+  state.receiptForm.error = '';
+  state.receiptForm.message = '';
+  render();
+}
+
+function resetReceiptForm() {
+  state.receiptForm = createInitialReceiptFormState();
+}
+
+function syncReceiptFormFromFormData(formData) {
+  const itemIds = formData.getAll('itemId').map((value) => String(value));
+
+  state.receiptForm.receiptDate = String(formData.get('receiptDate') ?? '');
+  state.receiptForm.supplierName = String(formData.get('supplierName') ?? '');
+  state.receiptForm.note = String(formData.get('note') ?? '');
+  state.receiptForm.items = itemIds.map((id) => ({
+    id,
+    materialId: String(formData.get(`materialId:${id}`) ?? ''),
+    materialName: String(formData.get(`materialName:${id}`) ?? ''),
+    quantity: String(formData.get(`quantity:${id}`) ?? ''),
+    unit: String(formData.get(`unit:${id}`) ?? ''),
+    unitPrice: String(formData.get(`unitPrice:${id}`) ?? '')
+  }));
+
+  if (!state.receiptForm.items.length) {
+    state.receiptForm.items = [createEmptyReceiptItem()];
+  }
+}
+
+function validateReceiptForm() {
+  if (!RECEIPT_DATE_PATTERN.test(state.receiptForm.receiptDate.trim())) {
+    return 'Ngày nhập phải có định dạng hợp lệ.';
+  }
+
+  for (let index = 0; index < state.receiptForm.items.length; index += 1) {
+    const item = state.receiptForm.items[index];
+    const rowLabel = `Dòng ${index + 1}`;
+    const quantity = parseInputNumber(item.quantity);
+    const unitPrice = parseInputNumber(item.unitPrice);
+
+    if (!item.materialName.trim()) {
+      return `${rowLabel}: Tên hàng hóa là bắt buộc.`;
+    }
+
+    if (!item.unit.trim()) {
+      return `${rowLabel}: Đơn vị tính là bắt buộc.`;
+    }
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return `${rowLabel}: Số lượng phải lớn hơn 0.`;
+    }
+
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+      return `${rowLabel}: Giá nhập phải từ 0 trở lên.`;
+    }
+  }
+
+  return '';
+}
+
+function buildReceiptPayload() {
+  return {
+    clientRequestId: state.receiptForm.clientRequestId,
+    receiptDate: state.receiptForm.receiptDate.trim(),
+    supplierName: state.receiptForm.supplierName.trim(),
+    note: state.receiptForm.note.trim(),
+    items: state.receiptForm.items.map((item) => {
+      const materialId = item.materialId.trim();
+
+      return {
+        ...(materialId ? { materialId } : {}),
+        materialName: item.materialName.trim(),
+        quantity: parseInputNumber(item.quantity),
+        unit: item.unit.trim(),
+        unitPrice: parseInputNumber(item.unitPrice)
+      };
+    })
+  };
+}
+
+function createReceiptFormSignature() {
+  return JSON.stringify({
+    receiptDate: state.receiptForm.receiptDate.trim(),
+    supplierName: state.receiptForm.supplierName.trim(),
+    note: state.receiptForm.note.trim(),
+    items: state.receiptForm.items.map((item) => ({
+      materialId: item.materialId.trim(),
+      materialName: item.materialName.trim(),
+      quantity: parseInputNumber(item.quantity),
+      unit: item.unit.trim(),
+      unitPrice: parseInputNumber(item.unitPrice)
+    }))
+  });
+}
+
+function computeReceiptFormTotal() {
+  return state.receiptForm.items.reduce(
+    (sum, item) => sum + computeLineTotal(item.quantity, item.unitPrice),
+    0
+  );
+}
+
+function computeLineTotal(quantityValue, unitPriceValue) {
+  const quantity = parseInputNumber(quantityValue);
+  const unitPrice = parseInputNumber(unitPriceValue);
+
+  if (!Number.isFinite(quantity) || !Number.isFinite(unitPrice)) {
+    return 0;
+  }
+
+  return quantity * unitPrice;
+}
+
+function parseInputNumber(value) {
+  return Number(String(value).trim().replace(',', '.'));
+}
+
+function createTodayInputValue() {
+  const date = new Date();
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+async function reloadReceiptLists() {
+  await Promise.all([
+    loadApprovals(true),
+    loadHistory(true)
+  ]);
 }
 
 function readStoredSession() {
@@ -1602,6 +2244,18 @@ function normalizeApiBaseUrl(value) {
 
 function normalizePath(path) {
   return path.startsWith('/') ? path : `/${path}`;
+}
+
+function createUuid() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (token) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = token === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function getDeviceId() {

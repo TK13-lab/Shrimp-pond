@@ -25,7 +25,7 @@ Hoàn thành MVP nội bộ cho module **Nhập hàng vật tư** với:
 - Chống nhập trùng bằng `client_request_id` / idempotency key
 - Audit log để truy vết ai đã làm gì
 - Build file cài Android cho nhân viên dùng thử
-- Web responsive cho staff xem lịch sử phiếu của mình, manager/admin duyệt phiếu, xem lịch sử và tồn kho
+- Web responsive cho staff nhập phiếu/xem lịch sử, manager/admin duyệt phiếu, xem lịch sử và tồn kho
 
 ## Stack đề xuất
 

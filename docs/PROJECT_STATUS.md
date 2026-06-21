@@ -90,8 +90,8 @@ Date: 2026-06-19
 - The Prisma seed script now matches the demo docs more closely by creating the standard demo materials in addition to the demo users, which makes first-run UI testing much smoother.
 - The mobile app now supports desktop browser preview through Expo web, and auth session storage falls back to browser local storage on web so login and navigation can be tested without a native simulator.
 - The NestJS API now enables CORS so the browser preview can call the same local REST endpoints as the mobile app during development.
-- Product direction is now split by workflow: STAFF uses the Android mobile app for receipt entry and can use the responsive web portal for own receipt history, while MANAGER and ADMIN use the web portal for approvals, receipt history, and inventory.
-- `apps/web` is implemented as a dependency-free responsive web portal with login, staff receipt history access, submitted receipt queue for reviewers, receipt detail drawer, approve/reject actions, history filters, void action, and inventory search.
+- Product direction is now split by workflow: STAFF can use either the Android mobile app or responsive web portal for receipt entry, draft save/submit, material lookup, and own receipt history, while MANAGER and ADMIN use the web portal for approvals, receipt history, and inventory.
+- `apps/web` is implemented as a dependency-free responsive web portal with login, staff receipt creation, material lookup, draft save/submit, staff receipt history access, submitted receipt queue for reviewers, receipt detail drawer, approve/reject actions, history filters, void action, and inventory search.
 - The mobile menu now treats MANAGER and ADMIN as web-only users, while preserving STAFF receipt-entry flows in the Android app.
 - Production deployment now supports `WEB_DOMAIN` in Caddy, serves `apps/web` as static files, and reverse proxies `/api/*` to the NestJS API for same-domain web calls.
 - CI now includes a Web Portal job that runs the web JavaScript syntax check.
