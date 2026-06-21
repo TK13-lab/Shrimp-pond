@@ -7,7 +7,7 @@
       "distribution": "internal",
       "environment": "preview",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.vinhdanfarm.com.vn/api"
+        "EXPO_PUBLIC_API_BASE_URL": "https://vinhdanfarm.com.vn/api"
       },
       "android": {
         "buildType": "apk"
