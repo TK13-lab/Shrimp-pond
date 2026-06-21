@@ -2,11 +2,6 @@
 	email {$LETS_ENCRYPT_EMAIL}
 }
 
-{$API_DOMAIN} {
-	encode gzip
-	reverse_proxy api:3000
-}
-
 {$WEB_DOMAIN} {
 	encode gzip
 	root * /srv/web

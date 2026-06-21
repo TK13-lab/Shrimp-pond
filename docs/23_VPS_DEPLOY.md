@@ -6,7 +6,7 @@ This deploy target runs the production API, PostgreSQL, and HTTPS reverse proxy 
 
 - Ubuntu 24.04 VPS
 - Public IPv4 address
-- Domains or subdomains pointing to the VPS, for example `api.example.com` and `app.example.com`
+- A domain pointing to the VPS, for example `example.com`
 - Ports `80` and `443` open in the VPS firewall
 
 ## First Deploy
@@ -30,7 +30,7 @@ docker compose up -d --build
 Check the API:
 
 ```bash
-curl https://api.example.com/api/health
+curl https://example.com/api/health
 ```
 
 Expected response:
@@ -42,7 +42,7 @@ Expected response:
 Open the manager/admin web portal:
 
 ```text
-https://app.example.com
+https://example.com
 ```
 
 The web portal calls the API through the same domain at `/api`.
@@ -74,7 +74,7 @@ The PostgreSQL data stays in the `shrimp_pond_postgres_data` Docker volume.
 Build the Android APK with:
 
 ```text
-EXPO_PUBLIC_API_BASE_URL=https://api.example.com/api
+EXPO_PUBLIC_API_BASE_URL=https://example.com/api
 ```
 
 Phones on any Wi-Fi or mobile data network can use the app as long as the domain is reachable.
