@@ -148,15 +148,7 @@ export async function requestJson<T>(
 }
 
 function getApiBaseUrl(): string {
-  const env =
-    (
-      globalThis as typeof globalThis & {
-        process?: {
-          env?: Record<string, string | undefined>;
-        };
-      }
-    ).process?.env ?? {};
-  const configuredValue = env.EXPO_PUBLIC_API_BASE_URL?.trim();
+  const configuredValue = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 
   if (configuredValue) {
     return configuredValue.endsWith('/')
