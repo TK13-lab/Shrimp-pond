@@ -5,7 +5,7 @@
   "description": "NestJS backend for the Shrimp Pond Phase 1 MVP",
   "license": "UNLICENSED",
   "prisma": {
-    "seed": "ts-node --transpile-only prisma/seed.ts"
+    "seed": "node dist/prisma/seed.js"
   },
   "scripts": {
     "build": "nest build",
